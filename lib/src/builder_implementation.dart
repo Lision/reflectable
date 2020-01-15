@@ -157,7 +157,7 @@ class ReflectionWorld {
     }
     // return "final _data = <r.Reflectable, r.ReflectorData>"
     // "${_formatAsMap(reflectorsCode)};$typedefsCode";
-    return "${reflectorsCode.join(", ")}";
+    return "${reflectorsCode.join("\n")}";
   }
 
   /// Returns code which defines a mapping from symbols for covered members
@@ -755,9 +755,6 @@ class _ReflectorDomain {
     }
 
     String prefix = importCollector._getPrefix(constructor.library);
-    print('''
-    (${parameterParts.join(', ')}) => ${await _nameOfConstructor(constructor)}(${argumentParts.join(", ")})
-    ''');
     // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
     //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
     //     '(${argumentParts.join(", ")}) : null');
@@ -1021,7 +1018,7 @@ class _ReflectorDomain {
       }
     }
     // String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
-    String classMirrorsCode = typeMirrorsList.join(", ");
+    String classMirrorsCode = typeMirrorsList.join("\n");
 
     // Generate code for creation of getter and setter closures.
     String gettersCode = _formatAsMap(instanceGetterNames.map(_gettingClosure));
@@ -4072,7 +4069,7 @@ class BuilderImplementation {
     // Notice it is important to generate the code before printing the
     // imports because generating the code can add further imports.
     String code = await world.generateCode();
-
+    print(code);
     List<String> imports = <String>[];
     for (LibraryElement library in world.importCollector._libraries) {
       Uri uri = library == world.entryPointLibrary
