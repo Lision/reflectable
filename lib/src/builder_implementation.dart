@@ -150,12 +150,14 @@ class ReflectionWorld {
         }
         typedefs.clear();
       }
-      reflectorsCode
-          .add("${await reflector._constConstructionCode(importCollector)}: "
-              "$reflectorCode");
+      // reflectorsCode
+      //     .add("${await reflector._constConstructionCode(importCollector)}: "
+      //         "$reflectorCode");
+      reflectorsCode.add("$reflectorCode");
     }
-    return "final _data = <r.Reflectable, r.ReflectorData>"
-        "${_formatAsMap(reflectorsCode)};$typedefsCode";
+    // return "final _data = <r.Reflectable, r.ReflectorData>"
+    // "${_formatAsMap(reflectorsCode)};$typedefsCode";
+    return "${reflectorsCode.join(", ")}";
   }
 
   /// Returns code which defines a mapping from symbols for covered members
@@ -718,8 +720,18 @@ class _ReflectorDomain {
 
     String optionalArguments = Iterable.generate(optionalPositionalCount,
         (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
+    // String namedArguments =
+    //     namedParameterNames.map((String name) => "$name: $name").join(", ");
+    String namedArgumentsCode(String name) {
+      if (type.namedParameterTypes[name].name == "double") {
+        return "$name: $name == null ? $name : $name / 1.0";
+      }
+
+      return "$name: $name";
+    }
+
     String namedArguments =
-        namedParameterNames.map((String name) => "$name: $name").join(", ");
+        namedParameterNames.map((name) => namedArgumentsCode(name)).join(", ");
 
     List<String> parameterParts = <String>[];
     List<String> argumentParts = <String>[];
@@ -743,9 +755,13 @@ class _ReflectorDomain {
     }
 
     String prefix = importCollector._getPrefix(constructor.library);
-    return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
-        '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
-        '(${argumentParts.join(", ")}) : null');
+    print('''
+    (${parameterParts.join(', ')}) => ${await _nameOfConstructor(constructor)}(${argumentParts.join(", ")})
+    ''');
+    // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
+    //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
+    //     '(${argumentParts.join(", ")}) : null');
+    return "(${parameterParts.join(', ')}) => ${await _nameOfConstructor(constructor)}(${argumentParts.join(", ")})";
   }
 
   /// The code of the const-construction of this reflector.
@@ -1004,7 +1020,8 @@ class _ReflectorDomain {
             typeParameterElement, importCollector, objectClassElement));
       }
     }
-    String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
+    // String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
+    String classMirrorsCode = typeMirrorsList.join(", ");
 
     // Generate code for creation of getter and setter closures.
     String gettersCode = _formatAsMap(instanceGetterNames.map(_gettingClosure));
@@ -1115,10 +1132,11 @@ class _ReflectorDomain {
         .items
         .map((ParameterListShape shape) => shape.code));
 
-    return "r.ReflectorData($classMirrorsCode, $membersCode, "
-        "$parameterMirrorsCode, $typesCode, $reflectedTypesOffset, "
-        "$gettersCode, $settersCode, $librariesCode, "
-        "$parameterListShapesCode)";
+    // return "r.ReflectorData($classMirrorsCode, $membersCode, "
+    //     "$parameterMirrorsCode, $typesCode, $reflectedTypesOffset, "
+    //     "$gettersCode, $settersCode, $librariesCode, "
+    //     "$parameterListShapesCode)";
+    return "$classMirrorsCode";
   }
 
   Future<int> _computeTypeIndexBase(Element typeElement, bool isVoid,
@@ -1398,10 +1416,12 @@ class _ReflectorDomain {
       for (ConstructorElement constructor in classDomain._constructors) {
         if (constructor.isFactory || !constructor.enclosingElement.isAbstract) {
           String code = await _constructorCode(constructor, importCollector);
-          mapEntries.add('r"${constructor.name}": $code');
+          // mapEntries.add('r"${constructor.name}": $code');
+          mapEntries.add("\"${constructor.name}\": $code");
         }
       }
-      constructorsCode = _formatAsMap(mapEntries);
+      // constructorsCode = _formatAsMap(mapEntries);
+      constructorsCode = mapEntries.join(", ");
     }
 
     String staticGettersCode = "const {}";
@@ -1489,14 +1509,28 @@ class _ReflectorDomain {
     }
 
     if (classElement.typeParameters.isEmpty) {
-      return 'r.NonGenericClassMirrorImpl(r"${classDomain._simpleName}", '
-          'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
-          '${await _constConstructionCode(importCollector)}, '
-          '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
-          '$superclassIndex, $staticGettersCode, $staticSettersCode, '
-          '$constructorsCode, $ownerIndex, $mixinIndex, '
-          '$superinterfaceIndices, $classMetadataCode, '
-          '$parameterListShapesCode)';
+      // return 'r.NonGenericClassMirrorImpl(r"${classDomain._simpleName}", '
+      //     'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
+      //     '${await _constConstructionCode(importCollector)}, '
+      //     '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
+      //     '$superclassIndex, $staticGettersCode, $staticSettersCode, '
+      //     '$constructorsCode, $ownerIndex, $mixinIndex, '
+      //     '$superinterfaceIndices, $classMetadataCode, '
+      //     '$parameterListShapesCode)';
+      return '''
+      class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+        @override
+        MapEntry<String, Map<String, Function>> typeMethodMap() {
+          return MapEntry("Text", this._typeMethodMap());
+        }
+
+        Map<String, Function> _typeMethodMap() {
+          return {
+            $constructorsCode
+          };
+        }
+      }
+      ''';
     } else {
       // We are able to match up a given instance with a given generic type
       // by checking that the instance `is` an instance of the fully dynamic
@@ -4052,31 +4086,39 @@ class BuilderImplementation {
     }
     imports.sort();
 
-    String result = """
-// This file has been generated by the reflectable package.
-// https://github.com/dart-lang/reflectable.
+//     String result = """
+// // This file has been generated by the reflectable package.
+// // https://github.com/dart-lang/reflectable.
 
-import "dart:core";
-${imports.join('\n')}
+// import "dart:core";
+// ${imports.join('\n')}
 
-// ignore_for_file: unnecessary_const
+// // ignore_for_file: unnecessary_const
 
-// ignore:unused_import
-import "package:reflectable/mirrors.dart" as m;
-// ignore:unused_import
-import "package:reflectable/src/reflectable_builder_based.dart" as r;
-// ignore:unused_import
-import "package:reflectable/reflectable.dart" as r show Reflectable;
+// // ignore:unused_import
+// import "package:reflectable/mirrors.dart" as m;
+// // ignore:unused_import
+// import "package:reflectable/src/reflectable_builder_based.dart" as r;
+// // ignore:unused_import
+// import "package:reflectable/reflectable.dart" as r show Reflectable;
+
+// $code
+
+// final _memberSymbolMap = ${world.generateSymbolMap()};
+
+// initializeReflectable() {
+//   r.data = _data;
+//   r.memberSymbolMap = _memberSymbolMap;
+// }
+// """;
+
+    String result = '''
+// This file has been generated by the hera package.
 
 $code
 
-final _memberSymbolMap = ${world.generateSymbolMap()};
+''';
 
-initializeReflectable() {
-  r.data = _data;
-  r.memberSymbolMap = _memberSymbolMap;
-}
-""";
     if (_formatted) {
       DartFormatter formatter = DartFormatter();
       result = formatter.format(result);
