@@ -1521,7 +1521,7 @@ class _ReflectorDomain {
       class Proxy${classDomain._simpleName} extends ProxyTypeBase {
         @override
         MapEntry<String, Map<String, Function>> typeMethodMap() {
-          return MapEntry("Text", this._typeMethodMap());
+          return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
         }
 
         Map<String, Function> _typeMethodMap() {
