@@ -4547,7 +4547,8 @@ Future<String> _extractConstantCode(
           // unresolved? Issue 173.
           await _fine("Encountered unresolved identifier $expression"
               " in constant; using null");
-          return "null";
+          // return "null";
+          return "${expression.name}";
         } else if (element.library == null) {
           return "${element.name}";
         } else if (await _isImportableLibrary(

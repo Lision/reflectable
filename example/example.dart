@@ -18,64 +18,102 @@ class MyReflectable extends r.Reflectable {
         );
 }
 
+// @MyReflectable()
+// class Opacity extends SingleChildRenderObjectWidget {
+//   /// Creates a widget that makes its child partially transparent.
+//   ///
+//   /// The [opacity] argument must not be null and must be between 0.0 and 1.0
+//   /// (inclusive).
+//   const Opacity({
+//     Key key,
+//     @required this.opacity,
+//     this.alwaysIncludeSemantics = false,
+//     Widget child,
+//   })  : assert(opacity != null && opacity >= 0.0 && opacity <= 1.0),
+//         assert(alwaysIncludeSemantics != null),
+//         super(key: key, child: child);
+
+//   /// The fraction to scale the child's alpha value.
+//   ///
+//   /// An opacity of 1.0 is fully opaque. An opacity of 0.0 is fully transparent
+//   /// (i.e., invisible).
+//   ///
+//   /// The opacity must not be null.
+//   ///
+//   /// Values 1.0 and 0.0 are painted with a fast path. Other values
+//   /// require painting the child into an intermediate buffer, which is
+//   /// expensive.
+//   final double opacity;
+
+//   /// Whether the semantic information of the children is always included.
+//   ///
+//   /// Defaults to false.
+//   ///
+//   /// When true, regardless of the opacity settings the child semantic
+//   /// information is exposed as if the widget were fully visible. This is
+//   /// useful in cases where labels may be hidden during animations that
+//   /// would otherwise contribute relevant semantics.
+//   final bool alwaysIncludeSemantics;
+
+//   @override
+//   RenderOpacity createRenderObject(BuildContext context) {
+//     return RenderOpacity(
+//       opacity: opacity,
+//       alwaysIncludeSemantics: alwaysIncludeSemantics,
+//     );
+//   }
+
+//   @override
+//   void updateRenderObject(BuildContext context, RenderOpacity renderObject) {
+//     renderObject
+//       ..opacity = opacity
+//       ..alwaysIncludeSemantics = alwaysIncludeSemantics;
+//   }
+
+//   @override
+//   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+//     super.debugFillProperties(properties);
+//     properties.add(DoubleProperty('opacity', opacity));
+//     properties.add(FlagProperty('alwaysIncludeSemantics',
+//         value: alwaysIncludeSemantics, ifTrue: 'alwaysIncludeSemantics'));
+//   }
+// }
+
 @MyReflectable()
-class Opacity extends SingleChildRenderObjectWidget {
-  /// Creates a widget that makes its child partially transparent.
+class ClipRect extends SingleChildRenderObjectWidget {
+  /// Creates a rectangular clip.
   ///
-  /// The [opacity] argument must not be null and must be between 0.0 and 1.0
-  /// (inclusive).
-  const Opacity({
-    Key key,
-    @required this.opacity,
-    this.alwaysIncludeSemantics = false,
-    Widget child,
-  })  : assert(opacity != null && opacity >= 0.0 && opacity <= 1.0),
-        assert(alwaysIncludeSemantics != null),
-        super(key: key, child: child);
+  /// If [clipper] is null, the clip will match the layout size and position of
+  /// the child.
+  const ClipRect(
+      {Key key, this.clipper, this.clipBehavior = Clip.hardEdge, Widget child})
+      : super(key: key, child: child);
 
-  /// The fraction to scale the child's alpha value.
-  ///
-  /// An opacity of 1.0 is fully opaque. An opacity of 0.0 is fully transparent
-  /// (i.e., invisible).
-  ///
-  /// The opacity must not be null.
-  ///
-  /// Values 1.0 and 0.0 are painted with a fast path. Other values
-  /// require painting the child into an intermediate buffer, which is
-  /// expensive.
-  final double opacity;
+  /// If non-null, determines which clip to use.
+  final CustomClipper<Rect> clipper;
 
-  /// Whether the semantic information of the children is always included.
-  ///
-  /// Defaults to false.
-  ///
-  /// When true, regardless of the opacity settings the child semantic
-  /// information is exposed as if the widget were fully visible. This is
-  /// useful in cases where labels may be hidden during animations that
-  /// would otherwise contribute relevant semantics.
-  final bool alwaysIncludeSemantics;
+  /// {@macro flutter.clipper.clipBehavior}
+  final Clip clipBehavior;
 
   @override
-  RenderOpacity createRenderObject(BuildContext context) {
-    return RenderOpacity(
-      opacity: opacity,
-      alwaysIncludeSemantics: alwaysIncludeSemantics,
-    );
+  RenderClipRect createRenderObject(BuildContext context) =>
+      RenderClipRect(clipper: clipper, clipBehavior: clipBehavior);
+
+  @override
+  void updateRenderObject(BuildContext context, RenderClipRect renderObject) {
+    renderObject.clipper = clipper;
   }
 
   @override
-  void updateRenderObject(BuildContext context, RenderOpacity renderObject) {
-    renderObject
-      ..opacity = opacity
-      ..alwaysIncludeSemantics = alwaysIncludeSemantics;
+  void didUnmountRenderObject(RenderClipRect renderObject) {
+    renderObject.clipper = null;
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DoubleProperty('opacity', opacity));
-    properties.add(FlagProperty('alwaysIncludeSemantics',
-        value: alwaysIncludeSemantics, ifTrue: 'alwaysIncludeSemantics'));
+    properties.add(DiagnosticsProperty<CustomClipper<Rect>>('clipper', clipper,
+        defaultValue: null));
   }
 }
 
