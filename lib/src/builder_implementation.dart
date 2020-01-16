@@ -4431,9 +4431,10 @@ Future<String> _extractConstantCode(
         return "const ${_formatAsDynamicList(elements)}";
       } else {
         assert(expression.typeArguments.arguments.length == 1);
-        String typeArgument =
-            typeAnnotationHelper(expression.typeArguments.arguments[0]);
-        return "const <$typeArgument>${_formatAsDynamicList(elements)}";
+        // String typeArgument =
+        // typeAnnotationHelper(expression.typeArguments.arguments[0]);
+        // return "const <$typeArgument>${_formatAsDynamicList(elements)}";
+        return "${expression.toString()}";
       }
     } else if (expression is SetOrMapLiteral) {
       if (expression.isMap) {
