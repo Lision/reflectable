@@ -4407,6 +4407,9 @@ Future<String> _extractConstantCode(
     Resolver resolver) async {
   String typeAnnotationHelper(TypeAnnotation typeName) {
     LibraryElement library = typeName.type.element.library;
+    if (library == null) {
+      print("!!!!!!!!! type annotation error !!!!!!!!!");
+    }
     String prefix = importCollector._getPrefix(library);
     return "$prefix$typeName";
   }
@@ -4457,11 +4460,12 @@ Future<String> _extractConstantCode(
           return "const ${_formatAsMap(elements)}";
         } else {
           assert(expression.typeArguments.arguments.length == 2);
-          String keyType =
-              typeAnnotationHelper(expression.typeArguments.arguments[0]);
-          String valueType =
-              typeAnnotationHelper(expression.typeArguments.arguments[1]);
-          return "const <$keyType, $valueType>${_formatAsMap(elements)}";
+          // String keyType =
+          //     typeAnnotationHelper(expression.typeArguments.arguments[0]);
+          // String valueType =
+          //     typeAnnotationHelper(expression.typeArguments.arguments[1]);
+          // return "const <$keyType, $valueType>${_formatAsMap(elements)}";
+          return "${expression.toString()}";
         }
       } else if (expression.isSet) {
         List<String> elements = [];
@@ -4482,9 +4486,10 @@ Future<String> _extractConstantCode(
           return "const ${_formatAsDynamicSet(elements)}";
         } else {
           assert(expression.typeArguments.arguments.length == 1);
-          String typeArgument =
-              typeAnnotationHelper(expression.typeArguments.arguments[0]);
-          return "const <$typeArgument>${_formatAsDynamicSet(elements)}";
+          // String typeArgument =
+          // typeAnnotationHelper(expression.typeArguments.arguments[0]);
+          // return "const <$typeArgument>${_formatAsDynamicSet(elements)}";
+          return "${expression.toString()}";
         }
       } else {
         unreachableError("SetOrMapLiteral is neither a set nor a map");
@@ -4587,13 +4592,14 @@ Future<String> _extractConstantCode(
       return "$target.$selector";
     } else if (expression is MethodInvocation) {
       // We only handle "identical(a, b)".
-      assert(expression.target == null);
-      assert(expression.methodName.token.lexeme == "identical");
-      var arguments = expression.argumentList.arguments;
-      assert(arguments.length == 2);
-      String a = await helper(arguments[0]);
-      String b = await helper(arguments[1]);
-      return "identical($a, $b)";
+      // assert(expression.target == null);
+      // assert(expression.methodName.token.lexeme == "identical");
+      // var arguments = expression.argumentList.arguments;
+      // assert(arguments.length == 2);
+      // String a = await helper(arguments[0]);
+      // String b = await helper(arguments[1]);
+      // return "identical($a, $b)";
+      return "${expression.toString()}";
     } else if (expression is NamedExpression) {
       String value = await _extractConstantCode(
           expression.expression, importCollector, generatedLibraryId, resolver);

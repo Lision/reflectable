@@ -623,204 +623,293 @@ class MyReflectable extends r.Reflectable {
 // }
 
 @MyReflectable()
-class Wrap extends MultiChildRenderObjectWidget {
-  /// Creates a wrap layout.
+class MaterialApp extends StatefulWidget {
+  /// Creates a MaterialApp.
   ///
-  /// By default, the wrap layout is horizontal and both the children and the
-  /// runs are aligned to the start.
+  /// At least one of [home], [routes], [onGenerateRoute], or [builder] must be
+  /// non-null. If only [routes] is given, it must include an entry for the
+  /// [Navigator.defaultRouteName] (`/`), since that is the route used when the
+  /// application is launched with an intent that specifies an otherwise
+  /// unsupported route.
   ///
-  /// The [textDirection] argument defaults to the ambient [Directionality], if
-  /// any. If there is no ambient directionality, and a text direction is going
-  /// to be necessary to decide which direction to lay the children in or to
-  /// disambiguate `start` or `end` values for the main or cross axis
-  /// directions, the [textDirection] must not be null.
-  Wrap({
+  /// This class creates an instance of [WidgetsApp].
+  ///
+  /// The boolean arguments, [routes], and [navigatorObservers], must not be null.
+  const MaterialApp({
     Key key,
-    this.direction = Axis.horizontal,
-    this.alignment = WrapAlignment.start,
-    this.spacing = 0.0,
-    this.runAlignment = WrapAlignment.start,
-    this.runSpacing = 0.0,
-    this.crossAxisAlignment = WrapCrossAlignment.start,
-    this.textDirection,
-    this.verticalDirection = VerticalDirection.down,
-    List<Widget> children = const <Widget>[],
-  }) : super(key: key, children: children);
+    this.navigatorKey,
+    this.home,
+    this.routes = const <String, WidgetBuilder>{},
+    this.initialRoute,
+    this.onGenerateRoute,
+    this.onUnknownRoute,
+    this.navigatorObservers = const <NavigatorObserver>[],
+    this.builder,
+    this.title = '',
+    this.onGenerateTitle,
+    this.color,
+    this.theme,
+    this.darkTheme,
+    this.locale,
+    this.localizationsDelegates,
+    this.localeListResolutionCallback,
+    this.localeResolutionCallback,
+    this.supportedLocales = const <Locale>[Locale('en', 'US')],
+    this.debugShowMaterialGrid = false,
+    this.showPerformanceOverlay = false,
+    this.checkerboardRasterCacheImages = false,
+    this.checkerboardOffscreenLayers = false,
+    this.showSemanticsDebugger = false,
+    this.debugShowCheckedModeBanner = true,
+  })  : assert(routes != null),
+        assert(navigatorObservers != null),
+        assert(title != null),
+        assert(debugShowMaterialGrid != null),
+        assert(showPerformanceOverlay != null),
+        assert(checkerboardRasterCacheImages != null),
+        assert(checkerboardOffscreenLayers != null),
+        assert(showSemanticsDebugger != null),
+        assert(debugShowCheckedModeBanner != null),
+        super(key: key);
 
-  /// The direction to use as the main axis.
-  ///
-  /// For example, if [direction] is [Axis.horizontal], the default, the
-  /// children are placed adjacent to one another in a horizontal run until the
-  /// available horizontal space is consumed, at which point a subsequent
-  /// children are placed in a new run vertically adjacent to the previous run.
-  final Axis direction;
+  /// {@macro flutter.widgets.widgetsApp.navigatorKey}
+  final GlobalKey<NavigatorState> navigatorKey;
 
-  /// How the children within a run should be placed in the main axis.
+  /// {@macro flutter.widgets.widgetsApp.home}
+  final Widget home;
+
+  /// The application's top-level routing table.
   ///
-  /// For example, if [alignment] is [WrapAlignment.center], the children in
-  /// each run are grouped together in the center of their run in the main axis.
+  /// When a named route is pushed with [Navigator.pushNamed], the route name is
+  /// looked up in this map. If the name is present, the associated
+  /// [WidgetBuilder] is used to construct a [MaterialPageRoute] that performs
+  /// an appropriate transition, including [Hero] animations, to the new route.
   ///
-  /// Defaults to [WrapAlignment.start].
+  /// {@macro flutter.widgets.widgetsApp.routes}
+  final Map<String, WidgetBuilder> routes;
+
+  /// {@macro flutter.widgets.widgetsApp.initialRoute}
+  final String initialRoute;
+
+  /// {@macro flutter.widgets.widgetsApp.onGenerateRoute}
+  final RouteFactory onGenerateRoute;
+
+  /// {@macro flutter.widgets.widgetsApp.onUnknownRoute}
+  final RouteFactory onUnknownRoute;
+
+  /// {@macro flutter.widgets.widgetsApp.navigatorObservers}
+  final List<NavigatorObserver> navigatorObservers;
+
+  /// {@macro flutter.widgets.widgetsApp.builder}
+  ///
+  /// Material specific features such as [showDialog] and [showMenu], and widgets
+  /// such as [Tooltip], [PopupMenuButton], also require a [Navigator] to properly
+  /// function.
+  final TransitionBuilder builder;
+
+  /// {@macro flutter.widgets.widgetsApp.title}
+  ///
+  /// This value is passed unmodified to [WidgetsApp.title].
+  final String title;
+
+  /// {@macro flutter.widgets.widgetsApp.onGenerateTitle}
+  ///
+  /// This value is passed unmodified to [WidgetsApp.onGenerateTitle].
+  final GenerateAppTitle onGenerateTitle;
+
+  /// Default visual properties, like colors fonts and shapes, for this app's
+  /// material widgets.
+  ///
+  /// A second [darkTheme] [ThemeData] value, which is used when the underlying
+  /// platform requests a "dark mode" UI, can also be specified.
+  ///
+  /// The default value of this property is the value of [ThemeData.light()].
   ///
   /// See also:
   ///
-  ///  * [runAlignment], which controls how the runs are placed relative to each
-  ///    other in the cross axis.
-  ///  * [crossAxisAlignment], which controls how the children within each run
-  ///    are placed relative to each other in the cross axis.
-  final WrapAlignment alignment;
+  ///  * [MediaQueryData.platformBrightness], which indicates the platform's
+  ///    desired brightness and is used to automatically toggle between [theme]
+  ///    and [darkTheme] in [MaterialApp].
+  ///  * [ThemeData.brightness], which indicates the [Brightness] of a theme's
+  ///    colors.
+  final ThemeData theme;
 
-  /// How much space to place between children in a run in the main axis.
+  /// The [ThemeData] to use when the platform specifically requests a dark
+  /// themed UI.
   ///
-  /// For example, if [spacing] is 10.0, the children will be spaced at least
-  /// 10.0 logical pixels apart in the main axis.
+  /// Host platforms such as Android Pie can request a system-wide "dark mode"
+  /// when entering battery saver mode.
   ///
-  /// If there is additional free space in a run (e.g., because the wrap has a
-  /// minimum size that is not filled or because some runs are longer than
-  /// others), the additional free space will be allocated according to the
-  /// [alignment].
+  /// When the host platform requests a [Brightness.dark] mode, you may want to
+  /// supply a [ThemeData.brightness] that's also [Brightness.dark].
   ///
-  /// Defaults to 0.0.
-  final double spacing;
-
-  /// How the runs themselves should be placed in the cross axis.
-  ///
-  /// For example, if [runAlignment] is [WrapAlignment.center], the runs are
-  /// grouped together in the center of the overall [Wrap] in the cross axis.
-  ///
-  /// Defaults to [WrapAlignment.start].
+  /// Uses [theme] instead when null. Defaults to the value of
+  /// [ThemeData.light()] when both [darkTheme] and [theme] are null.
   ///
   /// See also:
   ///
-  ///  * [alignment], which controls how the children within each run are placed
-  ///    relative to each other in the main axis.
-  ///  * [crossAxisAlignment], which controls how the children within each run
-  ///    are placed relative to each other in the cross axis.
-  final WrapAlignment runAlignment;
+  ///  * [MediaQueryData.platformBrightness], which indicates the platform's
+  ///    desired brightness and is used to automatically toggle between [theme]
+  ///    and [darkTheme] in [MaterialApp].
+  ///  * [ThemeData.brightness], which is typically set to the value of
+  ///    [MediaQueryData.platformBrightness].
+  final ThemeData darkTheme;
 
-  /// How much space to place between the runs themselves in the cross axis.
-  ///
-  /// For example, if [runSpacing] is 10.0, the runs will be spaced at least
-  /// 10.0 logical pixels apart in the cross axis.
-  ///
-  /// If there is additional free space in the overall [Wrap] (e.g., because
-  /// the wrap has a minimum size that is not filled), the additional free space
-  /// will be allocated according to the [runAlignment].
-  ///
-  /// Defaults to 0.0.
-  final double runSpacing;
+  /// {@macro flutter.widgets.widgetsApp.color}
+  final Color color;
 
-  /// How the children within a run should be aligned relative to each other in
-  /// the cross axis.
+  /// {@macro flutter.widgets.widgetsApp.locale}
+  final Locale locale;
+
+  /// {@macro flutter.widgets.widgetsApp.localizationsDelegates}
   ///
-  /// For example, if this is set to [WrapCrossAlignment.end], and the
-  /// [direction] is [Axis.horizontal], then the children within each
-  /// run will have their bottom edges aligned to the bottom edge of the run.
+  /// Internationalized apps that require translations for one of the locales
+  /// listed in [GlobalMaterialLocalizations] should specify this parameter
+  /// and list the [supportedLocales] that the application can handle.
   ///
-  /// Defaults to [WrapCrossAlignment.start].
+  /// ```dart
+  /// import 'package:flutter_localizations/flutter_localizations.dart';
+  /// MaterialApp(
+  ///   localizationsDelegates: [
+  ///     // ... app-specific localization delegate[s] here
+  ///     GlobalMaterialLocalizations.delegate,
+  ///     GlobalWidgetsLocalizations.delegate,
+  ///   ],
+  ///   supportedLocales: [
+  ///     const Locale('en', 'US'), // English
+  ///     const Locale('he', 'IL'), // Hebrew
+  ///     // ... other locales the app supports
+  ///   ],
+  ///   // ...
+  /// )
+  /// ```
+  ///
+  /// ## Adding localizations for a new locale
+  ///
+  /// The information that follows applies to the unusual case of an app
+  /// adding translations for a language not already supported by
+  /// [GlobalMaterialLocalizations].
+  ///
+  /// Delegates that produce [WidgetsLocalizations] and [MaterialLocalizations]
+  /// are included automatically. Apps can provide their own versions of these
+  /// localizations by creating implementations of
+  /// [LocalizationsDelegate<WidgetsLocalizations>] or
+  /// [LocalizationsDelegate<MaterialLocalizations>] whose load methods return
+  /// custom versions of [WidgetsLocalizations] or [MaterialLocalizations].
+  ///
+  /// For example: to add support to [MaterialLocalizations] for a
+  /// locale it doesn't already support, say `const Locale('foo', 'BR')`,
+  /// one could just extend [DefaultMaterialLocalizations]:
+  ///
+  /// ```dart
+  /// class FooLocalizations extends DefaultMaterialLocalizations {
+  ///   FooLocalizations(Locale locale) : super(locale);
+  ///   @override
+  ///   String get okButtonLabel {
+  ///     if (locale == const Locale('foo', 'BR'))
+  ///       return 'foo';
+  ///     return super.okButtonLabel;
+  ///   }
+  /// }
+  ///
+  /// ```
+  ///
+  /// A `FooLocalizationsDelegate` is essentially just a method that constructs
+  /// a `FooLocalizations` object. We return a [SynchronousFuture] here because
+  /// no asynchronous work takes place upon "loading" the localizations object.
+  ///
+  /// ```dart
+  /// class FooLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
+  ///   const FooLocalizationsDelegate();
+  ///   @override
+  ///   Future<FooLocalizations> load(Locale locale) {
+  ///     return SynchronousFuture(FooLocalizations(locale));
+  ///   }
+  ///   @override
+  ///   bool shouldReload(FooLocalizationsDelegate old) => false;
+  /// }
+  /// ```
+  ///
+  /// Constructing a [MaterialApp] with a `FooLocalizationsDelegate` overrides
+  /// the automatically included delegate for [MaterialLocalizations] because
+  /// only the first delegate of each [LocalizationsDelegate.type] is used and
+  /// the automatically included delegates are added to the end of the app's
+  /// [localizationsDelegates] list.
+  ///
+  /// ```dart
+  /// MaterialApp(
+  ///   localizationsDelegates: [
+  ///     const FooLocalizationsDelegate(),
+  ///   ],
+  ///   // ...
+  /// )
+  /// ```
+  /// See also:
+  ///
+  ///  * [supportedLocales], which must be specified along with
+  ///    [localizationsDelegates].
+  ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
+  ///    which provides material localizations for many languages.
+  ///  * The Flutter Internationalization Tutorial,
+  ///    <https://flutter.dev/tutorials/internationalization/>.
+  final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;
+
+  /// {@macro flutter.widgets.widgetsApp.localeListResolutionCallback}
+  ///
+  /// This callback is passed along to the [WidgetsApp] built by this widget.
+  final LocaleListResolutionCallback localeListResolutionCallback;
+
+  /// {@macro flutter.widgets.widgetsApp.localeResolutionCallback}
+  ///
+  /// This callback is passed along to the [WidgetsApp] built by this widget.
+  final LocaleResolutionCallback localeResolutionCallback;
+
+  /// {@macro flutter.widgets.widgetsApp.supportedLocales}
+  ///
+  /// It is passed along unmodified to the [WidgetsApp] built by this widget.
   ///
   /// See also:
   ///
-  ///  * [alignment], which controls how the children within each run are placed
-  ///    relative to each other in the main axis.
-  ///  * [runAlignment], which controls how the runs are placed relative to each
-  ///    other in the cross axis.
-  final WrapCrossAlignment crossAxisAlignment;
+  ///  * [localizationsDelegates], which must be specified for localized
+  ///    applications.
+  ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
+  ///    which provides material localizations for many languages.
+  ///  * The Flutter Internationalization Tutorial,
+  ///    <https://flutter.dev/tutorials/internationalization/>.
+  final Iterable<Locale> supportedLocales;
 
-  /// Determines the order to lay children out horizontally and how to interpret
-  /// `start` and `end` in the horizontal direction.
+  /// Turns on a performance overlay.
   ///
-  /// Defaults to the ambient [Directionality].
+  /// See also:
   ///
-  /// If the [direction] is [Axis.horizontal], this controls order in which the
-  /// children are positioned (left-to-right or right-to-left), and the meaning
-  /// of the [alignment] property's [WrapAlignment.start] and
-  /// [WrapAlignment.end] values.
-  ///
-  /// If the [direction] is [Axis.horizontal], and either the
-  /// [alignment] is either [WrapAlignment.start] or [WrapAlignment.end], or
-  /// there's more than one child, then the [textDirection] (or the ambient
-  /// [Directionality]) must not be null.
-  ///
-  /// If the [direction] is [Axis.vertical], this controls the order in which
-  /// runs are positioned, the meaning of the [runAlignment] property's
-  /// [WrapAlignment.start] and [WrapAlignment.end] values, as well as the
-  /// [crossAxisAlignment] property's [WrapCrossAlignment.start] and
-  /// [WrapCrossAlignment.end] values.
-  ///
-  /// If the [direction] is [Axis.vertical], and either the
-  /// [runAlignment] is either [WrapAlignment.start] or [WrapAlignment.end], the
-  /// [crossAxisAlignment] is either [WrapCrossAlignment.start] or
-  /// [WrapCrossAlignment.end], or there's more than one child, then the
-  /// [textDirection] (or the ambient [Directionality]) must not be null.
-  final TextDirection textDirection;
+  ///  * <https://flutter.dev/debugging/#performanceoverlay>
+  final bool showPerformanceOverlay;
 
-  /// Determines the order to lay children out vertically and how to interpret
-  /// `start` and `end` in the vertical direction.
+  /// Turns on checkerboarding of raster cache images.
+  final bool checkerboardRasterCacheImages;
+
+  /// Turns on checkerboarding of layers rendered to offscreen bitmaps.
+  final bool checkerboardOffscreenLayers;
+
+  /// Turns on an overlay that shows the accessibility information
+  /// reported by the framework.
+  final bool showSemanticsDebugger;
+
+  /// {@macro flutter.widgets.widgetsApp.debugShowCheckedModeBanner}
+  final bool debugShowCheckedModeBanner;
+
+  /// Turns on a [GridPaper] overlay that paints a baseline grid
+  /// Material apps.
   ///
-  /// If the [direction] is [Axis.vertical], this controls which order children
-  /// are painted in (down or up), the meaning of the [alignment] property's
-  /// [WrapAlignment.start] and [WrapAlignment.end] values.
+  /// Only available in checked mode.
   ///
-  /// If the [direction] is [Axis.vertical], and either the [alignment]
-  /// is either [WrapAlignment.start] or [WrapAlignment.end], or there's
-  /// more than one child, then the [verticalDirection] must not be null.
+  /// See also:
   ///
-  /// If the [direction] is [Axis.horizontal], this controls the order in which
-  /// runs are positioned, the meaning of the [runAlignment] property's
-  /// [WrapAlignment.start] and [WrapAlignment.end] values, as well as the
-  /// [crossAxisAlignment] property's [WrapCrossAlignment.start] and
-  /// [WrapCrossAlignment.end] values.
-  ///
-  /// If the [direction] is [Axis.horizontal], and either the
-  /// [runAlignment] is either [WrapAlignment.start] or [WrapAlignment.end], the
-  /// [crossAxisAlignment] is either [WrapCrossAlignment.start] or
-  /// [WrapCrossAlignment.end], or there's more than one child, then the
-  /// [verticalDirection] must not be null.
-  final VerticalDirection verticalDirection;
+  ///  * <https://material.io/design/layout/spacing-methods.html>
+  final bool debugShowMaterialGrid;
 
   @override
-  RenderWrap createRenderObject(BuildContext context) {
-    return RenderWrap(
-      direction: direction,
-      alignment: alignment,
-      spacing: spacing,
-      runAlignment: runAlignment,
-      runSpacing: runSpacing,
-      crossAxisAlignment: crossAxisAlignment,
-      textDirection: textDirection ?? Directionality.of(context),
-      verticalDirection: verticalDirection,
-    );
-  }
-
-  @override
-  void updateRenderObject(BuildContext context, RenderWrap renderObject) {
-    renderObject
-      ..direction = direction
-      ..alignment = alignment
-      ..spacing = spacing
-      ..runAlignment = runAlignment
-      ..runSpacing = runSpacing
-      ..crossAxisAlignment = crossAxisAlignment
-      ..textDirection = textDirection ?? Directionality.of(context)
-      ..verticalDirection = verticalDirection;
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(EnumProperty<Axis>('direction', direction));
-    properties.add(EnumProperty<WrapAlignment>('alignment', alignment));
-    properties.add(DoubleProperty('spacing', spacing));
-    properties.add(EnumProperty<WrapAlignment>('runAlignment', runAlignment));
-    properties.add(DoubleProperty('runSpacing', runSpacing));
-    properties.add(DoubleProperty('crossAxisAlignment', runSpacing));
-    properties.add(EnumProperty<TextDirection>('textDirection', textDirection,
-        defaultValue: null));
-    properties.add(EnumProperty<VerticalDirection>(
-        'verticalDirection', verticalDirection,
-        defaultValue: VerticalDirection.down));
-  }
+  _MaterialAppState createState() => _MaterialAppState();
 }
 
 void main() {}
