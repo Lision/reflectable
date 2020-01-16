@@ -1692,175 +1692,457 @@ class MyReflectable extends r.Reflectable {
 //   }
 // }
 
+// @MyReflectable()
+// class MediaQuery extends InheritedWidget {
+//   /// Creates a widget that provides [MediaQueryData] to its descendants.
+//   ///
+//   /// The [data] and [child] arguments must not be null.
+//   const MediaQuery({
+//     Key key,
+//     @required this.data,
+//     @required Widget child,
+//   })  : assert(child != null),
+//         assert(data != null),
+//         super(key: key, child: child);
+
+//   /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
+//   /// the given context, but removes the specified paddings.
+//   ///
+//   /// This should be inserted into the widget tree when the [MediaQuery] padding
+//   /// is consumed by a widget in such a way that the padding is no longer
+//   /// exposed to the widget's descendants or siblings.
+//   ///
+//   /// The [context] argument is required, must not be null, and must have a
+//   /// [MediaQuery] in scope.
+//   ///
+//   /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
+//   /// must not be null. If all four are false (the default) then the returned
+//   /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
+//   /// particularly useful.
+//   ///
+//   /// The [child] argument is required and must not be null.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [SafeArea], which both removes the padding from the [MediaQuery] and
+//   ///    adds a [Padding] widget.
+//   ///  * [MediaQueryData.padding], the affected property of the [MediaQueryData].
+//   ///  * [new removeViewInsets], the same thing but for removing view insets.
+//   factory MediaQuery.removePadding({
+//     Key key,
+//     @required BuildContext context,
+//     bool removeLeft = false,
+//     bool removeTop = false,
+//     bool removeRight = false,
+//     bool removeBottom = false,
+//     @required Widget child,
+//   }) {
+//     return MediaQuery(
+//       key: key,
+//       data: MediaQuery.of(context).removePadding(
+//         removeLeft: removeLeft,
+//         removeTop: removeTop,
+//         removeRight: removeRight,
+//         removeBottom: removeBottom,
+//       ),
+//       child: child,
+//     );
+//   }
+
+//   /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
+//   /// the given context, but removes the specified view insets.
+//   ///
+//   /// This should be inserted into the widget tree when the [MediaQuery] view
+//   /// insets are consumed by a widget in such a way that the view insets are no
+//   /// longer exposed to the widget's descendants or siblings.
+//   ///
+//   /// The [context] argument is required, must not be null, and must have a
+//   /// [MediaQuery] in scope.
+//   ///
+//   /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
+//   /// must not be null. If all four are false (the default) then the returned
+//   /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
+//   /// particularly useful.
+//   ///
+//   /// The [child] argument is required and must not be null.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [MediaQueryData.viewInsets], the affected property of the [MediaQueryData].
+//   ///  * [new removePadding], the same thing but for removing paddings.
+//   factory MediaQuery.removeViewInsets({
+//     Key key,
+//     @required BuildContext context,
+//     bool removeLeft = false,
+//     bool removeTop = false,
+//     bool removeRight = false,
+//     bool removeBottom = false,
+//     @required Widget child,
+//   }) {
+//     return MediaQuery(
+//       key: key,
+//       data: MediaQuery.of(context).removeViewInsets(
+//         removeLeft: removeLeft,
+//         removeTop: removeTop,
+//         removeRight: removeRight,
+//         removeBottom: removeBottom,
+//       ),
+//       child: child,
+//     );
+//   }
+
+//   /// Contains information about the current media.
+//   ///
+//   /// For example, the [MediaQueryData.size] property contains the width and
+//   /// height of the current window.
+//   final MediaQueryData data;
+
+//   /// The data from the closest instance of this class that encloses the given
+//   /// context.
+//   ///
+//   /// You can use this function to query the size an orientation of the screen.
+//   /// When that information changes, your widget will be scheduled to be rebuilt,
+//   /// keeping your widget up-to-date.
+//   ///
+//   /// Typical usage is as follows:
+//   ///
+//   /// ```dart
+//   /// MediaQueryData media = MediaQuery.of(context);
+//   /// ```
+//   ///
+//   /// If there is no [MediaQuery] in scope, then this will throw an exception.
+//   /// To return null if there is no [MediaQuery], then pass `nullOk: true`.
+//   ///
+//   /// If you use this from a widget (e.g. in its build function), consider
+//   /// calling [debugCheckHasMediaQuery].
+//   static MediaQueryData of(BuildContext context, {bool nullOk = false}) {
+//     assert(context != null);
+//     assert(nullOk != null);
+//     final MediaQuery query = context.inheritFromWidgetOfExactType(MediaQuery);
+//     if (query != null) return query.data;
+//     if (nullOk) return null;
+//     throw FlutterError(
+//         'MediaQuery.of() called with a context that does not contain a MediaQuery.\n'
+//         'No MediaQuery ancestor could be found starting from the context that was passed '
+//         'to MediaQuery.of(). This can happen because you do not have a WidgetsApp or '
+//         'MaterialApp widget (those widgets introduce a MediaQuery), or it can happen '
+//         'if the context you use comes from a widget above those widgets.\n'
+//         'The context used was:\n'
+//         '  $context');
+//   }
+
+//   /// Returns textScaleFactor for the nearest MediaQuery ancestor or 1.0, if
+//   /// no such ancestor exists.
+//   static double textScaleFactorOf(BuildContext context) {
+//     return MediaQuery.of(context, nullOk: true)?.textScaleFactor ?? 1.0;
+//   }
+
+//   /// Returns platformBrightness for the nearest MediaQuery ancestor or
+//   /// [Brightness.light], if no such ancestor exists.
+//   ///
+//   /// Use of this method will cause the given [context] to rebuild any time that
+//   /// any property of the ancestor [MediaQuery] changes.
+//   static Brightness platformBrightnessOf(BuildContext context) {
+//     return MediaQuery.of(context, nullOk: true)?.platformBrightness ??
+//         Brightness.light;
+//   }
+
+//   /// Returns the boldText accessibility setting for the nearest MediaQuery
+//   /// ancestor, or false if no such ancestor exists.
+//   static bool boldTextOverride(BuildContext context) {
+//     return MediaQuery.of(context, nullOk: true)?.boldText ?? false;
+//   }
+
+//   @override
+//   bool updateShouldNotify(MediaQuery oldWidget) => data != oldWidget.data;
+
+//   @override
+//   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+//     super.debugFillProperties(properties);
+//     properties.add(
+//         DiagnosticsProperty<MediaQueryData>('data', data, showName: false));
+//   }
+// }
+
 @MyReflectable()
-class MediaQuery extends InheritedWidget {
-  /// Creates a widget that provides [MediaQueryData] to its descendants.
-  ///
-  /// The [data] and [child] arguments must not be null.
-  const MediaQuery({
-    Key key,
-    @required this.data,
-    @required Widget child,
-  })  : assert(child != null),
-        assert(data != null),
-        super(key: key, child: child);
+class EdgeInsets extends EdgeInsetsGeometry {
+  /// Creates insets from offsets from the left, top, right, and bottom.
+  const EdgeInsets.fromLTRB(this.left, this.top, this.right, this.bottom);
 
-  /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
-  /// the given context, but removes the specified paddings.
+  /// Creates insets where all the offsets are `value`.
   ///
-  /// This should be inserted into the widget tree when the [MediaQuery] padding
-  /// is consumed by a widget in such a way that the padding is no longer
-  /// exposed to the widget's descendants or siblings.
+  /// {@tool sample}
   ///
-  /// The [context] argument is required, must not be null, and must have a
-  /// [MediaQuery] in scope.
-  ///
-  /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
-  /// must not be null. If all four are false (the default) then the returned
-  /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
-  /// particularly useful.
-  ///
-  /// The [child] argument is required and must not be null.
-  ///
-  /// See also:
-  ///
-  ///  * [SafeArea], which both removes the padding from the [MediaQuery] and
-  ///    adds a [Padding] widget.
-  ///  * [MediaQueryData.padding], the affected property of the [MediaQueryData].
-  ///  * [new removeViewInsets], the same thing but for removing view insets.
-  factory MediaQuery.removePadding({
-    Key key,
-    @required BuildContext context,
-    bool removeLeft = false,
-    bool removeTop = false,
-    bool removeRight = false,
-    bool removeBottom = false,
-    @required Widget child,
-  }) {
-    return MediaQuery(
-      key: key,
-      data: MediaQuery.of(context).removePadding(
-        removeLeft: removeLeft,
-        removeTop: removeTop,
-        removeRight: removeRight,
-        removeBottom: removeBottom,
-      ),
-      child: child,
-    );
-  }
-
-  /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
-  /// the given context, but removes the specified view insets.
-  ///
-  /// This should be inserted into the widget tree when the [MediaQuery] view
-  /// insets are consumed by a widget in such a way that the view insets are no
-  /// longer exposed to the widget's descendants or siblings.
-  ///
-  /// The [context] argument is required, must not be null, and must have a
-  /// [MediaQuery] in scope.
-  ///
-  /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
-  /// must not be null. If all four are false (the default) then the returned
-  /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
-  /// particularly useful.
-  ///
-  /// The [child] argument is required and must not be null.
-  ///
-  /// See also:
-  ///
-  ///  * [MediaQueryData.viewInsets], the affected property of the [MediaQueryData].
-  ///  * [new removePadding], the same thing but for removing paddings.
-  factory MediaQuery.removeViewInsets({
-    Key key,
-    @required BuildContext context,
-    bool removeLeft = false,
-    bool removeTop = false,
-    bool removeRight = false,
-    bool removeBottom = false,
-    @required Widget child,
-  }) {
-    return MediaQuery(
-      key: key,
-      data: MediaQuery.of(context).removeViewInsets(
-        removeLeft: removeLeft,
-        removeTop: removeTop,
-        removeRight: removeRight,
-        removeBottom: removeBottom,
-      ),
-      child: child,
-    );
-  }
-
-  /// Contains information about the current media.
-  ///
-  /// For example, the [MediaQueryData.size] property contains the width and
-  /// height of the current window.
-  final MediaQueryData data;
-
-  /// The data from the closest instance of this class that encloses the given
-  /// context.
-  ///
-  /// You can use this function to query the size an orientation of the screen.
-  /// When that information changes, your widget will be scheduled to be rebuilt,
-  /// keeping your widget up-to-date.
-  ///
-  /// Typical usage is as follows:
+  /// Typical eight-pixel margin on all sides:
   ///
   /// ```dart
-  /// MediaQueryData media = MediaQuery.of(context);
+  /// const EdgeInsets.all(8.0)
   /// ```
+  /// {@end-tool}
+  const EdgeInsets.all(double value)
+      : left = value,
+        top = value,
+        right = value,
+        bottom = value;
+
+  /// Creates insets with only the given values non-zero.
   ///
-  /// If there is no [MediaQuery] in scope, then this will throw an exception.
-  /// To return null if there is no [MediaQuery], then pass `nullOk: true`.
+  /// {@tool sample}
   ///
-  /// If you use this from a widget (e.g. in its build function), consider
-  /// calling [debugCheckHasMediaQuery].
-  static MediaQueryData of(BuildContext context, {bool nullOk = false}) {
-    assert(context != null);
-    assert(nullOk != null);
-    final MediaQuery query = context.inheritFromWidgetOfExactType(MediaQuery);
-    if (query != null) return query.data;
-    if (nullOk) return null;
-    throw FlutterError(
-        'MediaQuery.of() called with a context that does not contain a MediaQuery.\n'
-        'No MediaQuery ancestor could be found starting from the context that was passed '
-        'to MediaQuery.of(). This can happen because you do not have a WidgetsApp or '
-        'MaterialApp widget (those widgets introduce a MediaQuery), or it can happen '
-        'if the context you use comes from a widget above those widgets.\n'
-        'The context used was:\n'
-        '  $context');
+  /// Left margin indent of 40 pixels:
+  ///
+  /// ```dart
+  /// const EdgeInsets.only(left: 40.0)
+  /// ```
+  /// {@end-tool}
+  const EdgeInsets.only({
+    this.left = 0.0,
+    this.top = 0.0,
+    this.right = 0.0,
+    this.bottom = 0.0,
+  });
+
+  /// Creates insets with symmetrical vertical and horizontal offsets.
+  ///
+  /// {@tool sample}
+  ///
+  /// Eight pixel margin above and below, no horizontal margins:
+  ///
+  /// ```dart
+  /// const EdgeInsets.symmetric(vertical: 8.0)
+  /// ```
+  /// {@end-tool}
+  const EdgeInsets.symmetric({
+    double vertical = 0.0,
+    double horizontal = 0.0,
+  })  : left = horizontal,
+        top = vertical,
+        right = horizontal,
+        bottom = vertical;
+
+  /// Creates insets that match the given window padding.
+  ///
+  /// If you need the current system padding or view insets in the context of a
+  /// widget, consider using [MediaQuery.of] to obtain these values rather than
+  /// using the value from [dart:ui.window], so that you get notified of
+  /// changes.
+  EdgeInsets.fromWindowPadding(
+      ui.WindowPadding padding, double devicePixelRatio)
+      : left = padding.left / devicePixelRatio,
+        top = padding.top / devicePixelRatio,
+        right = padding.right / devicePixelRatio,
+        bottom = padding.bottom / devicePixelRatio;
+
+  /// An [EdgeInsets] with zero offsets in each direction.
+  static const EdgeInsets zero = EdgeInsets.only();
+
+  /// The offset from the left.
+  final double left;
+
+  @override
+  double get _left => left;
+
+  /// The offset from the top.
+  final double top;
+
+  @override
+  double get _top => top;
+
+  /// The offset from the right.
+  final double right;
+
+  @override
+  double get _right => right;
+
+  /// The offset from the bottom.
+  final double bottom;
+
+  @override
+  double get _bottom => bottom;
+
+  @override
+  double get _start => 0.0;
+
+  @override
+  double get _end => 0.0;
+
+  /// An Offset describing the vector from the top left of a rectangle to the
+  /// top left of that rectangle inset by this object.
+  Offset get topLeft => Offset(left, top);
+
+  /// An Offset describing the vector from the top right of a rectangle to the
+  /// top right of that rectangle inset by this object.
+  Offset get topRight => Offset(-right, top);
+
+  /// An Offset describing the vector from the bottom left of a rectangle to the
+  /// bottom left of that rectangle inset by this object.
+  Offset get bottomLeft => Offset(left, -bottom);
+
+  /// An Offset describing the vector from the bottom right of a rectangle to the
+  /// bottom right of that rectangle inset by this object.
+  Offset get bottomRight => Offset(-right, -bottom);
+
+  /// An [EdgeInsets] with top and bottom as well as left and right flipped.
+  @override
+  EdgeInsets get flipped => EdgeInsets.fromLTRB(right, bottom, left, top);
+
+  /// Returns a new rect that is bigger than the given rect in each direction by
+  /// the amount of inset in each direction. Specifically, the left edge of the
+  /// rect is moved left by [left], the top edge of the rect is moved up by
+  /// [top], the right edge of the rect is moved right by [right], and the
+  /// bottom edge of the rect is moved down by [bottom].
+  ///
+  /// See also:
+  ///
+  ///  * [inflateSize], to inflate a [Size] rather than a [Rect].
+  ///  * [deflateRect], to deflate a [Rect] rather than inflating it.
+  Rect inflateRect(Rect rect) {
+    return Rect.fromLTRB(rect.left - left, rect.top - top, rect.right + right,
+        rect.bottom + bottom);
   }
 
-  /// Returns textScaleFactor for the nearest MediaQuery ancestor or 1.0, if
-  /// no such ancestor exists.
-  static double textScaleFactorOf(BuildContext context) {
-    return MediaQuery.of(context, nullOk: true)?.textScaleFactor ?? 1.0;
-  }
-
-  /// Returns platformBrightness for the nearest MediaQuery ancestor or
-  /// [Brightness.light], if no such ancestor exists.
+  /// Returns a new rect that is smaller than the given rect in each direction by
+  /// the amount of inset in each direction. Specifically, the left edge of the
+  /// rect is moved right by [left], the top edge of the rect is moved down by
+  /// [top], the right edge of the rect is moved left by [right], and the
+  /// bottom edge of the rect is moved up by [bottom].
   ///
-  /// Use of this method will cause the given [context] to rebuild any time that
-  /// any property of the ancestor [MediaQuery] changes.
-  static Brightness platformBrightnessOf(BuildContext context) {
-    return MediaQuery.of(context, nullOk: true)?.platformBrightness ??
-        Brightness.light;
-  }
-
-  /// Returns the boldText accessibility setting for the nearest MediaQuery
-  /// ancestor, or false if no such ancestor exists.
-  static bool boldTextOverride(BuildContext context) {
-    return MediaQuery.of(context, nullOk: true)?.boldText ?? false;
+  /// If the argument's [Rect.size] is smaller than [collapsedSize], then the
+  /// resulting rectangle will have negative dimensions.
+  ///
+  /// See also:
+  ///
+  ///  * [deflateSize], to deflate a [Size] rather than a [Rect].
+  ///  * [inflateRect], to inflate a [Rect] rather than deflating it.
+  Rect deflateRect(Rect rect) {
+    return Rect.fromLTRB(rect.left + left, rect.top + top, rect.right - right,
+        rect.bottom - bottom);
   }
 
   @override
-  bool updateShouldNotify(MediaQuery oldWidget) => data != oldWidget.data;
+  EdgeInsetsGeometry subtract(EdgeInsetsGeometry other) {
+    if (other is EdgeInsets) return this - other;
+    return super.subtract(other);
+  }
 
   @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(
-        DiagnosticsProperty<MediaQueryData>('data', data, showName: false));
+  EdgeInsetsGeometry add(EdgeInsetsGeometry other) {
+    if (other is EdgeInsets) return this + other;
+    return super.add(other);
+  }
+
+  /// Returns the difference between two [EdgeInsets].
+  EdgeInsets operator -(EdgeInsets other) {
+    return EdgeInsets.fromLTRB(
+      left - other.left,
+      top - other.top,
+      right - other.right,
+      bottom - other.bottom,
+    );
+  }
+
+  /// Returns the sum of two [EdgeInsets].
+  EdgeInsets operator +(EdgeInsets other) {
+    return EdgeInsets.fromLTRB(
+      left + other.left,
+      top + other.top,
+      right + other.right,
+      bottom + other.bottom,
+    );
+  }
+
+  /// Returns the [EdgeInsets] object with each dimension negated.
+  ///
+  /// This is the same as multiplying the object by -1.0.
+  @override
+  EdgeInsets operator -() {
+    return EdgeInsets.fromLTRB(
+      -left,
+      -top,
+      -right,
+      -bottom,
+    );
+  }
+
+  /// Scales the [EdgeInsets] in each dimension by the given factor.
+  @override
+  EdgeInsets operator *(double other) {
+    return EdgeInsets.fromLTRB(
+      left * other,
+      top * other,
+      right * other,
+      bottom * other,
+    );
+  }
+
+  /// Divides the [EdgeInsets] in each dimension by the given factor.
+  @override
+  EdgeInsets operator /(double other) {
+    return EdgeInsets.fromLTRB(
+      left / other,
+      top / other,
+      right / other,
+      bottom / other,
+    );
+  }
+
+  /// Integer divides the [EdgeInsets] in each dimension by the given factor.
+  @override
+  EdgeInsets operator ~/(double other) {
+    return EdgeInsets.fromLTRB(
+      (left ~/ other).toDouble(),
+      (top ~/ other).toDouble(),
+      (right ~/ other).toDouble(),
+      (bottom ~/ other).toDouble(),
+    );
+  }
+
+  /// Computes the remainder in each dimension by the given factor.
+  @override
+  EdgeInsets operator %(double other) {
+    return EdgeInsets.fromLTRB(
+      left % other,
+      top % other,
+      right % other,
+      bottom % other,
+    );
+  }
+
+  /// Linearly interpolate between two [EdgeInsets].
+  ///
+  /// If either is null, this function interpolates from [EdgeInsets.zero].
+  ///
+  /// {@macro dart.ui.shadow.lerp}
+  static EdgeInsets lerp(EdgeInsets a, EdgeInsets b, double t) {
+    assert(t != null);
+    if (a == null && b == null) return null;
+    if (a == null) return b * t;
+    if (b == null) return a * (1.0 - t);
+    return EdgeInsets.fromLTRB(
+      ui.lerpDouble(a.left, b.left, t),
+      ui.lerpDouble(a.top, b.top, t),
+      ui.lerpDouble(a.right, b.right, t),
+      ui.lerpDouble(a.bottom, b.bottom, t),
+    );
+  }
+
+  @override
+  EdgeInsets resolve(TextDirection direction) => this;
+
+  /// Creates a copy of this EdgeInsets but with the given fields replaced
+  /// with the new values.
+  EdgeInsets copyWith({
+    double left,
+    double top,
+    double right,
+    double bottom,
+  }) {
+    return EdgeInsets.only(
+      left: left ?? this.left,
+      top: top ?? this.top,
+      right: right ?? this.right,
+      bottom: bottom ?? this.bottom,
+    );
   }
 }
 

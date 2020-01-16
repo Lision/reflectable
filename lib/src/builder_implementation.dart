@@ -682,9 +682,13 @@ class _ReflectorDomain {
           "b ? (length == null ? List() : List(length)) : null";
     }
 
+    String _positionalParamterCode(ParameterElement parameter) =>
+        _paramterCode(parameter.name, parameter.type.name);
     String positionals =
         Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
             .join(", ");
+    String positionalArguments = Iterable.generate(requiredPositionalCount,
+        (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
 
     List<String> optionalsWithDefaultList = [];
     for (int i = 0; i < optionalPositionalCount; i++) {
@@ -713,23 +717,17 @@ class _ReflectorDomain {
         (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
     // String namedArguments =
     //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String namedArgumentsCode(String name) {
-      if (type.namedParameterTypes[name].name == "double") {
-        return "$name: $name == null ? $name : $name / 1.0";
-      }
-
-      return "$name: $name";
-    }
-
+    String _namedArgumentsCode(String name) =>
+        _paramterCode(name, type.namedParameterTypes[name].name);
     String namedArguments =
-        namedParameterNames.map((name) => namedArgumentsCode(name)).join(", ");
+        namedParameterNames.map((name) => _namedArgumentsCode(name)).join(", ");
 
     List<String> parameterParts = <String>[];
     List<String> argumentParts = <String>[];
 
     if (requiredPositionalCount != 0) {
       parameterParts.add(positionals);
-      argumentParts.add(positionals);
+      argumentParts.add(positionalArguments);
     }
     if (optionalPositionalCount != 0) {
       parameterParts.add("[$optionalsWithDefaults]");
@@ -750,6 +748,14 @@ class _ReflectorDomain {
     //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
     //     '(${argumentParts.join(", ")}) : null');
     return "(${parameterParts.join(', ')}) => ${await _nameOfStaticMethod(executable)}(${argumentParts.join(", ")})";
+  }
+
+  String _paramterCode(String name, String typeName) {
+    if (typeName == "double") {
+      return "$name: $name == null ? $name : $name / 1.0";
+    }
+
+    return "$name: $name";
   }
 
   /// Returns a string that evaluates to a closure invoking [constructor] with
@@ -798,9 +804,13 @@ class _ReflectorDomain {
           "b ? (length == null ? List() : List(length)) : null";
     }
 
+    String _positionalParamterCode(ParameterElement parameter) =>
+        _paramterCode(parameter.name, parameter.type.name);
     String positionals =
         Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
             .join(", ");
+    String positionalArguments = Iterable.generate(requiredPositionalCount,
+        (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
 
     List<String> optionalsWithDefaultList = [];
     for (int i = 0; i < optionalPositionalCount; i++) {
@@ -829,23 +839,17 @@ class _ReflectorDomain {
         (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
     // String namedArguments =
     //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String namedArgumentsCode(String name) {
-      if (type.namedParameterTypes[name].name == "double") {
-        return "$name: $name == null ? $name : $name / 1.0";
-      }
-
-      return "$name: $name";
-    }
-
+    String _namedArgumentsCode(String name) =>
+        _paramterCode(name, type.namedParameterTypes[name].name);
     String namedArguments =
-        namedParameterNames.map((name) => namedArgumentsCode(name)).join(", ");
+        namedParameterNames.map((name) => _namedArgumentsCode(name)).join(", ");
 
     List<String> parameterParts = <String>[];
     List<String> argumentParts = <String>[];
 
     if (requiredPositionalCount != 0) {
       parameterParts.add(positionals);
-      argumentParts.add(positionals);
+      argumentParts.add(positionalArguments);
     }
     if (optionalPositionalCount != 0) {
       parameterParts.add("[$optionalsWithDefaults]");
