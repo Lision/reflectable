@@ -12,6 +12,7 @@ import 'package:reflectable/capability.dart';
 class MyReflectable extends r.Reflectable {
   const MyReflectable()
       : super(
+          staticInvokeCapability,
           instanceInvokeCapability,
           newInstanceCapability,
           declarationsCapability,
@@ -622,294 +623,1245 @@ class MyReflectable extends r.Reflectable {
 //   }
 // }
 
+// @MyReflectable()
+// class MaterialApp extends StatefulWidget {
+//   /// Creates a MaterialApp.
+//   ///
+//   /// At least one of [home], [routes], [onGenerateRoute], or [builder] must be
+//   /// non-null. If only [routes] is given, it must include an entry for the
+//   /// [Navigator.defaultRouteName] (`/`), since that is the route used when the
+//   /// application is launched with an intent that specifies an otherwise
+//   /// unsupported route.
+//   ///
+//   /// This class creates an instance of [WidgetsApp].
+//   ///
+//   /// The boolean arguments, [routes], and [navigatorObservers], must not be null.
+//   const MaterialApp({
+//     Key key,
+//     this.navigatorKey,
+//     this.home,
+//     this.routes = const <String, WidgetBuilder>{},
+//     this.initialRoute,
+//     this.onGenerateRoute,
+//     this.onUnknownRoute,
+//     this.navigatorObservers = const <NavigatorObserver>[],
+//     this.builder,
+//     this.title = '',
+//     this.onGenerateTitle,
+//     this.color,
+//     this.theme,
+//     this.darkTheme,
+//     this.locale,
+//     this.localizationsDelegates,
+//     this.localeListResolutionCallback,
+//     this.localeResolutionCallback,
+//     this.supportedLocales = const <Locale>[Locale('en', 'US')],
+//     this.debugShowMaterialGrid = false,
+//     this.showPerformanceOverlay = false,
+//     this.checkerboardRasterCacheImages = false,
+//     this.checkerboardOffscreenLayers = false,
+//     this.showSemanticsDebugger = false,
+//     this.debugShowCheckedModeBanner = true,
+//   })  : assert(routes != null),
+//         assert(navigatorObservers != null),
+//         assert(title != null),
+//         assert(debugShowMaterialGrid != null),
+//         assert(showPerformanceOverlay != null),
+//         assert(checkerboardRasterCacheImages != null),
+//         assert(checkerboardOffscreenLayers != null),
+//         assert(showSemanticsDebugger != null),
+//         assert(debugShowCheckedModeBanner != null),
+//         super(key: key);
+
+//   /// {@macro flutter.widgets.widgetsApp.navigatorKey}
+//   final GlobalKey<NavigatorState> navigatorKey;
+
+//   /// {@macro flutter.widgets.widgetsApp.home}
+//   final Widget home;
+
+//   /// The application's top-level routing table.
+//   ///
+//   /// When a named route is pushed with [Navigator.pushNamed], the route name is
+//   /// looked up in this map. If the name is present, the associated
+//   /// [WidgetBuilder] is used to construct a [MaterialPageRoute] that performs
+//   /// an appropriate transition, including [Hero] animations, to the new route.
+//   ///
+//   /// {@macro flutter.widgets.widgetsApp.routes}
+//   final Map<String, WidgetBuilder> routes;
+
+//   /// {@macro flutter.widgets.widgetsApp.initialRoute}
+//   final String initialRoute;
+
+//   /// {@macro flutter.widgets.widgetsApp.onGenerateRoute}
+//   final RouteFactory onGenerateRoute;
+
+//   /// {@macro flutter.widgets.widgetsApp.onUnknownRoute}
+//   final RouteFactory onUnknownRoute;
+
+//   /// {@macro flutter.widgets.widgetsApp.navigatorObservers}
+//   final List<NavigatorObserver> navigatorObservers;
+
+//   /// {@macro flutter.widgets.widgetsApp.builder}
+//   ///
+//   /// Material specific features such as [showDialog] and [showMenu], and widgets
+//   /// such as [Tooltip], [PopupMenuButton], also require a [Navigator] to properly
+//   /// function.
+//   final TransitionBuilder builder;
+
+//   /// {@macro flutter.widgets.widgetsApp.title}
+//   ///
+//   /// This value is passed unmodified to [WidgetsApp.title].
+//   final String title;
+
+//   /// {@macro flutter.widgets.widgetsApp.onGenerateTitle}
+//   ///
+//   /// This value is passed unmodified to [WidgetsApp.onGenerateTitle].
+//   final GenerateAppTitle onGenerateTitle;
+
+//   /// Default visual properties, like colors fonts and shapes, for this app's
+//   /// material widgets.
+//   ///
+//   /// A second [darkTheme] [ThemeData] value, which is used when the underlying
+//   /// platform requests a "dark mode" UI, can also be specified.
+//   ///
+//   /// The default value of this property is the value of [ThemeData.light()].
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [MediaQueryData.platformBrightness], which indicates the platform's
+//   ///    desired brightness and is used to automatically toggle between [theme]
+//   ///    and [darkTheme] in [MaterialApp].
+//   ///  * [ThemeData.brightness], which indicates the [Brightness] of a theme's
+//   ///    colors.
+//   final ThemeData theme;
+
+//   /// The [ThemeData] to use when the platform specifically requests a dark
+//   /// themed UI.
+//   ///
+//   /// Host platforms such as Android Pie can request a system-wide "dark mode"
+//   /// when entering battery saver mode.
+//   ///
+//   /// When the host platform requests a [Brightness.dark] mode, you may want to
+//   /// supply a [ThemeData.brightness] that's also [Brightness.dark].
+//   ///
+//   /// Uses [theme] instead when null. Defaults to the value of
+//   /// [ThemeData.light()] when both [darkTheme] and [theme] are null.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [MediaQueryData.platformBrightness], which indicates the platform's
+//   ///    desired brightness and is used to automatically toggle between [theme]
+//   ///    and [darkTheme] in [MaterialApp].
+//   ///  * [ThemeData.brightness], which is typically set to the value of
+//   ///    [MediaQueryData.platformBrightness].
+//   final ThemeData darkTheme;
+
+//   /// {@macro flutter.widgets.widgetsApp.color}
+//   final Color color;
+
+//   /// {@macro flutter.widgets.widgetsApp.locale}
+//   final Locale locale;
+
+//   /// {@macro flutter.widgets.widgetsApp.localizationsDelegates}
+//   ///
+//   /// Internationalized apps that require translations for one of the locales
+//   /// listed in [GlobalMaterialLocalizations] should specify this parameter
+//   /// and list the [supportedLocales] that the application can handle.
+//   ///
+//   /// ```dart
+//   /// import 'package:flutter_localizations/flutter_localizations.dart';
+//   /// MaterialApp(
+//   ///   localizationsDelegates: [
+//   ///     // ... app-specific localization delegate[s] here
+//   ///     GlobalMaterialLocalizations.delegate,
+//   ///     GlobalWidgetsLocalizations.delegate,
+//   ///   ],
+//   ///   supportedLocales: [
+//   ///     const Locale('en', 'US'), // English
+//   ///     const Locale('he', 'IL'), // Hebrew
+//   ///     // ... other locales the app supports
+//   ///   ],
+//   ///   // ...
+//   /// )
+//   /// ```
+//   ///
+//   /// ## Adding localizations for a new locale
+//   ///
+//   /// The information that follows applies to the unusual case of an app
+//   /// adding translations for a language not already supported by
+//   /// [GlobalMaterialLocalizations].
+//   ///
+//   /// Delegates that produce [WidgetsLocalizations] and [MaterialLocalizations]
+//   /// are included automatically. Apps can provide their own versions of these
+//   /// localizations by creating implementations of
+//   /// [LocalizationsDelegate<WidgetsLocalizations>] or
+//   /// [LocalizationsDelegate<MaterialLocalizations>] whose load methods return
+//   /// custom versions of [WidgetsLocalizations] or [MaterialLocalizations].
+//   ///
+//   /// For example: to add support to [MaterialLocalizations] for a
+//   /// locale it doesn't already support, say `const Locale('foo', 'BR')`,
+//   /// one could just extend [DefaultMaterialLocalizations]:
+//   ///
+//   /// ```dart
+//   /// class FooLocalizations extends DefaultMaterialLocalizations {
+//   ///   FooLocalizations(Locale locale) : super(locale);
+//   ///   @override
+//   ///   String get okButtonLabel {
+//   ///     if (locale == const Locale('foo', 'BR'))
+//   ///       return 'foo';
+//   ///     return super.okButtonLabel;
+//   ///   }
+//   /// }
+//   ///
+//   /// ```
+//   ///
+//   /// A `FooLocalizationsDelegate` is essentially just a method that constructs
+//   /// a `FooLocalizations` object. We return a [SynchronousFuture] here because
+//   /// no asynchronous work takes place upon "loading" the localizations object.
+//   ///
+//   /// ```dart
+//   /// class FooLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
+//   ///   const FooLocalizationsDelegate();
+//   ///   @override
+//   ///   Future<FooLocalizations> load(Locale locale) {
+//   ///     return SynchronousFuture(FooLocalizations(locale));
+//   ///   }
+//   ///   @override
+//   ///   bool shouldReload(FooLocalizationsDelegate old) => false;
+//   /// }
+//   /// ```
+//   ///
+//   /// Constructing a [MaterialApp] with a `FooLocalizationsDelegate` overrides
+//   /// the automatically included delegate for [MaterialLocalizations] because
+//   /// only the first delegate of each [LocalizationsDelegate.type] is used and
+//   /// the automatically included delegates are added to the end of the app's
+//   /// [localizationsDelegates] list.
+//   ///
+//   /// ```dart
+//   /// MaterialApp(
+//   ///   localizationsDelegates: [
+//   ///     const FooLocalizationsDelegate(),
+//   ///   ],
+//   ///   // ...
+//   /// )
+//   /// ```
+//   /// See also:
+//   ///
+//   ///  * [supportedLocales], which must be specified along with
+//   ///    [localizationsDelegates].
+//   ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
+//   ///    which provides material localizations for many languages.
+//   ///  * The Flutter Internationalization Tutorial,
+//   ///    <https://flutter.dev/tutorials/internationalization/>.
+//   final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;
+
+//   /// {@macro flutter.widgets.widgetsApp.localeListResolutionCallback}
+//   ///
+//   /// This callback is passed along to the [WidgetsApp] built by this widget.
+//   final LocaleListResolutionCallback localeListResolutionCallback;
+
+//   /// {@macro flutter.widgets.widgetsApp.localeResolutionCallback}
+//   ///
+//   /// This callback is passed along to the [WidgetsApp] built by this widget.
+//   final LocaleResolutionCallback localeResolutionCallback;
+
+//   /// {@macro flutter.widgets.widgetsApp.supportedLocales}
+//   ///
+//   /// It is passed along unmodified to the [WidgetsApp] built by this widget.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [localizationsDelegates], which must be specified for localized
+//   ///    applications.
+//   ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
+//   ///    which provides material localizations for many languages.
+//   ///  * The Flutter Internationalization Tutorial,
+//   ///    <https://flutter.dev/tutorials/internationalization/>.
+//   final Iterable<Locale> supportedLocales;
+
+//   /// Turns on a performance overlay.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * <https://flutter.dev/debugging/#performanceoverlay>
+//   final bool showPerformanceOverlay;
+
+//   /// Turns on checkerboarding of raster cache images.
+//   final bool checkerboardRasterCacheImages;
+
+//   /// Turns on checkerboarding of layers rendered to offscreen bitmaps.
+//   final bool checkerboardOffscreenLayers;
+
+//   /// Turns on an overlay that shows the accessibility information
+//   /// reported by the framework.
+//   final bool showSemanticsDebugger;
+
+//   /// {@macro flutter.widgets.widgetsApp.debugShowCheckedModeBanner}
+//   final bool debugShowCheckedModeBanner;
+
+//   /// Turns on a [GridPaper] overlay that paints a baseline grid
+//   /// Material apps.
+//   ///
+//   /// Only available in checked mode.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * <https://material.io/design/layout/spacing-methods.html>
+//   final bool debugShowMaterialGrid;
+
+//   @override
+//   _MaterialAppState createState() => _MaterialAppState();
+// }
+
+// @MyReflectable()
+// class Dialog extends StatelessWidget {
+//   /// Creates a dialog.
+//   ///
+//   /// Typically used in conjunction with [showDialog].
+//   const Dialog({
+//     Key key,
+//     this.backgroundColor,
+//     this.elevation,
+//     this.insetAnimationDuration = const Duration(milliseconds: 100),
+//     this.insetAnimationCurve = Curves.decelerate,
+//     this.shape,
+//     this.child,
+//   }) : super(key: key);
+
+//   /// {@template flutter.material.dialog.backgroundColor}
+//   /// The background color of the surface of this [Dialog].
+//   ///
+//   /// This sets the [Material.color] on this [Dialog]'s [Material].
+//   ///
+//   /// If `null`, [ThemeData.cardColor] is used.
+//   /// {@endtemplate}
+//   final Color backgroundColor;
+
+//   /// {@template flutter.material.dialog.elevation}
+//   /// The z-coordinate of this [Dialog].
+//   ///
+//   /// If null then [DialogTheme.elevation] is used, and if that's null then the
+//   /// dialog's elevation is 24.0.
+//   /// {@endtemplate}
+//   /// {@macro flutter.material.material.elevation}
+//   final double elevation;
+
+//   /// The duration of the animation to show when the system keyboard intrudes
+//   /// into the space that the dialog is placed in.
+//   ///
+//   /// Defaults to 100 milliseconds.
+//   final Duration insetAnimationDuration;
+
+//   /// The curve to use for the animation shown when the system keyboard intrudes
+//   /// into the space that the dialog is placed in.
+//   ///
+//   /// Defaults to [Curves.fastOutSlowIn].
+//   final Curve insetAnimationCurve;
+
+//   /// {@template flutter.material.dialog.shape}
+//   /// The shape of this dialog's border.
+//   ///
+//   /// Defines the dialog's [Material.shape].
+//   ///
+//   /// The default shape is a [RoundedRectangleBorder] with a radius of 2.0.
+//   /// {@endtemplate}
+//   final ShapeBorder shape;
+
+//   /// The widget below this widget in the tree.
+//   ///
+//   /// {@macro flutter.widgets.child}
+//   final Widget child;
+
+//   // TODO(johnsonmh): Update default dialog border radius to 4.0 to match material spec.
+//   static const RoundedRectangleBorder _defaultDialogShape =
+//       RoundedRectangleBorder(
+//           borderRadius: BorderRadius.all(Radius.circular(2.0)));
+//   static const double _defaultElevation = 24.0;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final DialogTheme dialogTheme = DialogTheme.of(context);
+//     return AnimatedPadding(
+//       padding: MediaQuery.of(context).viewInsets +
+//           const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+//       duration: insetAnimationDuration,
+//       curve: insetAnimationCurve,
+//       child: MediaQuery.removeViewInsets(
+//         removeLeft: true,
+//         removeTop: true,
+//         removeRight: true,
+//         removeBottom: true,
+//         context: context,
+//         child: Center(
+//           child: ConstrainedBox(
+//             constraints: const BoxConstraints(minWidth: 280.0),
+//             child: Material(
+//               color: backgroundColor ??
+//                   dialogTheme.backgroundColor ??
+//                   Theme.of(context).dialogBackgroundColor,
+//               elevation:
+//                   elevation ?? dialogTheme.elevation ?? _defaultElevation,
+//               shape: shape ?? dialogTheme.shape ?? _defaultDialogShape,
+//               type: MaterialType.card,
+//               child: child,
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// @MyReflectable()
+// class InkWell extends InkResponse {
+//   /// Creates an ink well.
+//   ///
+//   /// Must have an ancestor [Material] widget in which to cause ink reactions.
+//   ///
+//   /// The [enableFeedback] and [excludeFromSemantics] arguments must not be
+//   /// null.
+//   const InkWell({
+//     Key key,
+//     Widget child,
+//     GestureTapCallback onTap,
+//     GestureTapCallback onDoubleTap,
+//     GestureLongPressCallback onLongPress,
+//     GestureTapDownCallback onTapDown,
+//     GestureTapCancelCallback onTapCancel,
+//     ValueChanged<bool> onHighlightChanged,
+//     Color highlightColor,
+//     Color splashColor,
+//     InteractiveInkFeatureFactory splashFactory,
+//     double radius,
+//     BorderRadius borderRadius,
+//     ShapeBorder customBorder,
+//     bool enableFeedback = true,
+//     bool excludeFromSemantics = false,
+//   }) : super(
+//           key: key,
+//           child: child,
+//           onTap: onTap,
+//           onDoubleTap: onDoubleTap,
+//           onLongPress: onLongPress,
+//           onTapDown: onTapDown,
+//           onTapCancel: onTapCancel,
+//           onHighlightChanged: onHighlightChanged,
+//           containedInkWell: true,
+//           highlightShape: BoxShape.rectangle,
+//           highlightColor: highlightColor,
+//           splashColor: splashColor,
+//           splashFactory: splashFactory,
+//           radius: radius,
+//           borderRadius: borderRadius,
+//           customBorder: customBorder,
+//           enableFeedback: enableFeedback,
+//           excludeFromSemantics: excludeFromSemantics,
+//         );
+// }
+
+// @MyReflectable()
+// class TextField extends StatefulWidget {
+//   /// Creates a Material Design text field.
+//   ///
+//   /// If [decoration] is non-null (which is the default), the text field requires
+//   /// one of its ancestors to be a [Material] widget.
+//   ///
+//   /// To remove the decoration entirely (including the extra padding introduced
+//   /// by the decoration to save space for the labels), set the [decoration] to
+//   /// null.
+//   ///
+//   /// The [maxLines] property can be set to null to remove the restriction on
+//   /// the number of lines. By default, it is one, meaning this is a single-line
+//   /// text field. [maxLines] must not be zero.
+//   ///
+//   /// The [maxLength] property is set to null by default, which means the
+//   /// number of characters allowed in the text field is not restricted. If
+//   /// [maxLength] is set a character counter will be displayed below the
+//   /// field showing how many characters have been entered. If the value is
+//   /// set to a positive integer it will also display the maximum allowed
+//   /// number of characters to be entered.  If the value is set to
+//   /// [TextField.noMaxLength] then only the current length is displayed.
+//   ///
+//   /// After [maxLength] characters have been input, additional input
+//   /// is ignored, unless [maxLengthEnforced] is set to false. The text field
+//   /// enforces the length with a [LengthLimitingTextInputFormatter], which is
+//   /// evaluated after the supplied [inputFormatters], if any. The [maxLength]
+//   /// value must be either null or greater than zero.
+//   ///
+//   /// If [maxLengthEnforced] is set to false, then more than [maxLength]
+//   /// characters may be entered, and the error counter and divider will
+//   /// switch to the [decoration.errorStyle] when the limit is exceeded.
+//   ///
+//   /// The [textAlign], [autofocus], [obscureText], [autocorrect],
+//   /// [maxLengthEnforced], [scrollPadding], [maxLines], and [maxLength]
+//   /// arguments must not be null.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [maxLength], which discusses the precise meaning of "number of
+//   ///    characters" and how it may differ from the intuitive meaning.
+//   const TextField({
+//     Key key,
+//     this.controller,
+//     this.focusNode,
+//     this.decoration = const InputDecoration(),
+//     TextInputType keyboardType,
+//     this.textInputAction,
+//     this.textCapitalization = TextCapitalization.none,
+//     this.style,
+//     this.strutStyle,
+//     this.textAlign = TextAlign.start,
+//     this.textDirection,
+//     this.autofocus = false,
+//     this.obscureText = false,
+//     this.autocorrect = true,
+//     this.maxLines = 1,
+//     this.minLines,
+//     this.expands = false,
+//     this.maxLength,
+//     this.maxLengthEnforced = true,
+//     this.onChanged,
+//     this.onEditingComplete,
+//     this.onSubmitted,
+//     this.inputFormatters,
+//     this.enabled,
+//     this.cursorWidth = 2.0,
+//     this.cursorRadius,
+//     this.cursorColor,
+//     this.keyboardAppearance,
+//     this.scrollPadding = const EdgeInsets.all(20.0),
+//     this.dragStartBehavior = DragStartBehavior.start,
+//     this.enableInteractiveSelection,
+//     this.onTap,
+//     this.buildCounter,
+//     this.scrollPhysics,
+//   })  : assert(textAlign != null),
+//         assert(autofocus != null),
+//         assert(obscureText != null),
+//         assert(autocorrect != null),
+//         assert(maxLengthEnforced != null),
+//         assert(scrollPadding != null),
+//         assert(dragStartBehavior != null),
+//         assert(maxLines == null || maxLines > 0),
+//         assert(minLines == null || minLines > 0),
+//         assert(
+//           (maxLines == null) || (minLines == null) || (maxLines >= minLines),
+//           'minLines can\'t be greater than maxLines',
+//         ),
+//         assert(expands != null),
+//         assert(
+//           !expands || (maxLines == null && minLines == null),
+//           'minLines and maxLines must be null when expands is true.',
+//         ),
+//         assert(maxLength == null ||
+//             maxLength == TextField.noMaxLength ||
+//             maxLength > 0),
+//         keyboardType = keyboardType ??
+//             (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
+//         super(key: key);
+
+//   /// Controls the text being edited.
+//   ///
+//   /// If null, this widget will create its own [TextEditingController].
+//   final TextEditingController controller;
+
+//   /// Defines the keyboard focus for this widget.
+//   ///
+//   /// The [focusNode] is a long-lived object that's typically managed by a
+//   /// [StatefulWidget] parent. See [FocusNode] for more information.
+//   ///
+//   /// To give the keyboard focus to this widget, provide a [focusNode] and then
+//   /// use the current [FocusScope] to request the focus:
+//   ///
+//   /// ```dart
+//   /// FocusScope.of(context).requestFocus(myFocusNode);
+//   /// ```
+//   ///
+//   /// This happens automatically when the widget is tapped.
+//   ///
+//   /// To be notified when the widget gains or loses the focus, add a listener
+//   /// to the [focusNode]:
+//   ///
+//   /// ```dart
+//   /// focusNode.addListener(() { print(myFocusNode.hasFocus); });
+//   /// ```
+//   ///
+//   /// If null, this widget will create its own [FocusNode].
+//   ///
+//   /// ## Keyboard
+//   ///
+//   /// Requesting the focus will typically cause the keyboard to be shown
+//   /// if it's not showing already.
+//   ///
+//   /// On Android, the user can hide the keyboard - without changing the focus -
+//   /// with the system back button. They can restore the keyboard's visibility
+//   /// by tapping on a text field.  The user might hide the keyboard and
+//   /// switch to a physical keyboard, or they might just need to get it
+//   /// out of the way for a moment, to expose something it's
+//   /// obscuring. In this case requesting the focus again will not
+//   /// cause the focus to change, and will not make the keyboard visible.
+//   ///
+//   /// This widget builds an [EditableText] and will ensure that the keyboard is
+//   /// showing when it is tapped by calling [EditableTextState.requestKeyboard()].
+//   final FocusNode focusNode;
+
+//   /// The decoration to show around the text field.
+//   ///
+//   /// By default, draws a horizontal line under the text field but can be
+//   /// configured to show an icon, label, hint text, and error text.
+//   ///
+//   /// Specify null to remove the decoration entirely (including the
+//   /// extra padding introduced by the decoration to save space for the labels).
+//   final InputDecoration decoration;
+
+//   /// {@macro flutter.widgets.editableText.keyboardType}
+//   final TextInputType keyboardType;
+
+//   /// The type of action button to use for the keyboard.
+//   ///
+//   /// Defaults to [TextInputAction.newline] if [keyboardType] is
+//   /// [TextInputType.multiline] and [TextInputAction.done] otherwise.
+//   final TextInputAction textInputAction;
+
+//   /// {@macro flutter.widgets.editableText.textCapitalization}
+//   final TextCapitalization textCapitalization;
+
+//   /// The style to use for the text being edited.
+//   ///
+//   /// This text style is also used as the base style for the [decoration].
+//   ///
+//   /// If null, defaults to the `subhead` text style from the current [Theme].
+//   final TextStyle style;
+
+//   /// {@macro flutter.widgets.editableText.strutStyle}
+//   final StrutStyle strutStyle;
+
+//   /// {@macro flutter.widgets.editableText.textAlign}
+//   final TextAlign textAlign;
+
+//   /// {@macro flutter.widgets.editableText.textDirection}
+//   final TextDirection textDirection;
+
+//   /// {@macro flutter.widgets.editableText.autofocus}
+//   final bool autofocus;
+
+//   /// {@macro flutter.widgets.editableText.obscureText}
+//   final bool obscureText;
+
+//   /// {@macro flutter.widgets.editableText.autocorrect}
+//   final bool autocorrect;
+
+//   /// {@macro flutter.widgets.editableText.maxLines}
+//   final int maxLines;
+
+//   /// {@macro flutter.widgets.editableText.minLines}
+//   final int minLines;
+
+//   /// {@macro flutter.widgets.editableText.expands}
+//   final bool expands;
+
+//   /// If [maxLength] is set to this value, only the "current input length"
+//   /// part of the character counter is shown.
+//   static const int noMaxLength = -1;
+
+//   /// The maximum number of characters (Unicode scalar values) to allow in the
+//   /// text field.
+//   ///
+//   /// If set, a character counter will be displayed below the
+//   /// field showing how many characters have been entered. If set to a number
+//   /// greater than 0, it will also display the maximum number allowed. If set
+//   /// to [TextField.noMaxLength] then only the current character count is displayed.
+//   ///
+//   /// After [maxLength] characters have been input, additional input
+//   /// is ignored, unless [maxLengthEnforced] is set to false. The text field
+//   /// enforces the length with a [LengthLimitingTextInputFormatter], which is
+//   /// evaluated after the supplied [inputFormatters], if any.
+//   ///
+//   /// This value must be either null, [TextField.noMaxLength], or greater than 0.
+//   /// If null (the default) then there is no limit to the number of characters
+//   /// that can be entered. If set to [TextField.noMaxLength], then no limit will
+//   /// be enforced, but the number of characters entered will still be displayed.
+//   ///
+//   /// Whitespace characters (e.g. newline, space, tab) are included in the
+//   /// character count.
+//   ///
+//   /// If [maxLengthEnforced] is set to false, then more than [maxLength]
+//   /// characters may be entered, but the error counter and divider will
+//   /// switch to the [decoration.errorStyle] when the limit is exceeded.
+//   ///
+//   /// ## Limitations
+//   ///
+//   /// The text field does not currently count Unicode grapheme clusters (i.e.
+//   /// characters visible to the user), it counts Unicode scalar values, which
+//   /// leaves out a number of useful possible characters (like many emoji and
+//   /// composed characters), so this will be inaccurate in the presence of those
+//   /// characters. If you expect to encounter these kinds of characters, be
+//   /// generous in the maxLength used.
+//   ///
+//   /// For instance, the character "ö" can be represented as '\u{006F}\u{0308}',
+//   /// which is the letter "o" followed by a composed diaeresis "¨", or it can
+//   /// be represented as '\u{00F6}', which is the Unicode scalar value "LATIN
+//   /// SMALL LETTER O WITH DIAERESIS". In the first case, the text field will
+//   /// count two characters, and the second case will be counted as one
+//   /// character, even though the user can see no difference in the input.
+//   ///
+//   /// Similarly, some emoji are represented by multiple scalar values. The
+//   /// Unicode "THUMBS UP SIGN + MEDIUM SKIN TONE MODIFIER", "👍🏽", should be
+//   /// counted as a single character, but because it is a combination of two
+//   /// Unicode scalar values, '\u{1F44D}\u{1F3FD}', it is counted as two
+//   /// characters.
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [LengthLimitingTextInputFormatter] for more information on how it
+//   ///    counts characters, and how it may differ from the intuitive meaning.
+//   final int maxLength;
+
+//   /// If true, prevents the field from allowing more than [maxLength]
+//   /// characters.
+//   ///
+//   /// If [maxLength] is set, [maxLengthEnforced] indicates whether or not to
+//   /// enforce the limit, or merely provide a character counter and warning when
+//   /// [maxLength] is exceeded.
+//   final bool maxLengthEnforced;
+
+//   /// {@macro flutter.widgets.editableText.onChanged}
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [inputFormatters], which are called before [onChanged]
+//   ///    runs and can validate and change ("format") the input value.
+//   ///  * [onEditingComplete], [onSubmitted], [onSelectionChanged]:
+//   ///    which are more specialized input change notifications.
+//   final ValueChanged<String> onChanged;
+
+//   /// {@macro flutter.widgets.editableText.onEditingComplete}
+//   final VoidCallback onEditingComplete;
+
+//   /// {@macro flutter.widgets.editableText.onSubmitted}
+//   final ValueChanged<String> onSubmitted;
+
+//   /// {@macro flutter.widgets.editableText.inputFormatters}
+//   final List<TextInputFormatter> inputFormatters;
+
+//   /// If false the text field is "disabled": it ignores taps and its
+//   /// [decoration] is rendered in grey.
+//   ///
+//   /// If non-null this property overrides the [decoration]'s
+//   /// [Decoration.enabled] property.
+//   final bool enabled;
+
+//   /// {@macro flutter.widgets.editableText.cursorWidth}
+//   final double cursorWidth;
+
+//   /// {@macro flutter.widgets.editableText.cursorRadius}
+//   final Radius cursorRadius;
+
+//   /// The color to use when painting the cursor.
+//   ///
+//   /// Defaults to the theme's `cursorColor` when null.
+//   final Color cursorColor;
+
+//   /// The appearance of the keyboard.
+//   ///
+//   /// This setting is only honored on iOS devices.
+//   ///
+//   /// If unset, defaults to the brightness of [ThemeData.primaryColorBrightness].
+//   final Brightness keyboardAppearance;
+
+//   /// {@macro flutter.widgets.editableText.scrollPadding}
+//   final EdgeInsets scrollPadding;
+
+//   /// {@macro flutter.widgets.editableText.enableInteractiveSelection}
+//   final bool enableInteractiveSelection;
+
+//   /// {@macro flutter.widgets.scrollable.dragStartBehavior}
+//   final DragStartBehavior dragStartBehavior;
+
+//   /// {@macro flutter.rendering.editable.selectionEnabled}
+//   bool get selectionEnabled {
+//     return enableInteractiveSelection ?? !obscureText;
+//   }
+
+//   /// Called when the user taps on this text field.
+//   ///
+//   /// The text field builds a [GestureDetector] to handle input events like tap,
+//   /// to trigger focus requests, to move the caret, adjust the selection, etc.
+//   /// Handling some of those events by wrapping the text field with a competing
+//   /// GestureDetector is problematic.
+//   ///
+//   /// To unconditionally handle taps, without interfering with the text field's
+//   /// internal gesture detector, provide this callback.
+//   ///
+//   /// If the text field is created with [enabled] false, taps will not be
+//   /// recognized.
+//   ///
+//   /// To be notified when the text field gains or loses the focus, provide a
+//   /// [focusNode] and add a listener to that.
+//   ///
+//   /// To listen to arbitrary pointer events without competing with the
+//   /// text field's internal gesture detector, use a [Listener].
+//   final GestureTapCallback onTap;
+
+//   /// Callback that generates a custom [InputDecorator.counter] widget.
+//   ///
+//   /// See [InputCounterWidgetBuilder] for an explanation of the passed in
+//   /// arguments.  The returned widget will be placed below the line in place of
+//   /// the default widget built when [counterText] is specified.
+//   ///
+//   /// The returned widget will be wrapped in a [Semantics] widget for
+//   /// accessibility, but it also needs to be accessible itself.  For example,
+//   /// if returning a Text widget, set the [semanticsLabel] property.
+//   ///
+//   /// {@tool sample}
+//   /// ```dart
+//   /// Widget counter(
+//   ///   BuildContext context,
+//   ///   {
+//   ///     int currentLength,
+//   ///     int maxLength,
+//   ///     bool isFocused,
+//   ///   }
+//   /// ) {
+//   ///   return Text(
+//   ///     '$currentLength of $maxLength characters',
+//   ///     semanticsLabel: 'character count',
+//   ///   );
+//   /// }
+//   /// ```
+//   /// {@end-tool}
+//   final InputCounterWidgetBuilder buildCounter;
+
+//   /// {@macro flutter.widgets.edtiableText.scrollPhysics}
+//   final ScrollPhysics scrollPhysics;
+
+//   @override
+//   _TextFieldState createState() => _TextFieldState();
+
+//   @override
+//   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+//     super.debugFillProperties(properties);
+//     properties.add(DiagnosticsProperty<TextEditingController>(
+//         'controller', controller,
+//         defaultValue: null));
+//     properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode,
+//         defaultValue: null));
+//     properties
+//         .add(DiagnosticsProperty<bool>('enabled', enabled, defaultValue: null));
+//     properties.add(DiagnosticsProperty<InputDecoration>(
+//         'decoration', decoration,
+//         defaultValue: const InputDecoration()));
+//     properties.add(DiagnosticsProperty<TextInputType>(
+//         'keyboardType', keyboardType,
+//         defaultValue: TextInputType.text));
+//     properties.add(
+//         DiagnosticsProperty<TextStyle>('style', style, defaultValue: null));
+//     properties.add(
+//         DiagnosticsProperty<bool>('autofocus', autofocus, defaultValue: false));
+//     properties.add(DiagnosticsProperty<bool>('obscureText', obscureText,
+//         defaultValue: false));
+//     properties.add(DiagnosticsProperty<bool>('autocorrect', autocorrect,
+//         defaultValue: true));
+//     properties.add(IntProperty('maxLines', maxLines, defaultValue: 1));
+//     properties.add(IntProperty('minLines', minLines, defaultValue: null));
+//     properties.add(
+//         DiagnosticsProperty<bool>('expands', expands, defaultValue: false));
+//     properties.add(IntProperty('maxLength', maxLength, defaultValue: null));
+//     properties.add(FlagProperty('maxLengthEnforced',
+//         value: maxLengthEnforced,
+//         defaultValue: true,
+//         ifFalse: 'maxLength not enforced'));
+//     properties.add(EnumProperty<TextInputAction>(
+//         'textInputAction', textInputAction,
+//         defaultValue: null));
+//     properties.add(EnumProperty<TextCapitalization>(
+//         'textCapitalization', textCapitalization,
+//         defaultValue: TextCapitalization.none));
+//     properties.add(EnumProperty<TextAlign>('textAlign', textAlign,
+//         defaultValue: TextAlign.start));
+//     properties.add(EnumProperty<TextDirection>('textDirection', textDirection,
+//         defaultValue: null));
+//     properties
+//         .add(DoubleProperty('cursorWidth', cursorWidth, defaultValue: 2.0));
+//     properties.add(DiagnosticsProperty<Radius>('cursorRadius', cursorRadius,
+//         defaultValue: null));
+//     properties.add(DiagnosticsProperty<Color>('cursorColor', cursorColor,
+//         defaultValue: null));
+//     properties.add(DiagnosticsProperty<Brightness>(
+//         'keyboardAppearance', keyboardAppearance,
+//         defaultValue: null));
+//     properties.add(DiagnosticsProperty<EdgeInsetsGeometry>(
+//         'scrollPadding', scrollPadding,
+//         defaultValue: const EdgeInsets.all(20.0)));
+//     properties.add(FlagProperty('selectionEnabled',
+//         value: selectionEnabled,
+//         defaultValue: true,
+//         ifFalse: 'selection disabled'));
+//     properties.add(DiagnosticsProperty<ScrollPhysics>(
+//         'scrollPhysics', scrollPhysics,
+//         defaultValue: null));
+//   }
+// }
+
+// @MyReflectable()
+// class AlertDialog extends StatelessWidget {
+//   /// Creates an alert dialog.
+//   ///
+//   /// Typically used in conjunction with [showDialog].
+//   ///
+//   /// The [contentPadding] must not be null. The [titlePadding] defaults to
+//   /// null, which implies a default that depends on the values of the other
+//   /// properties. See the documentation of [titlePadding] for details.
+//   const AlertDialog({
+//     Key key,
+//     this.title,
+//     this.titlePadding,
+//     this.titleTextStyle,
+//     this.content,
+//     this.contentPadding = const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
+//     this.contentTextStyle,
+//     this.actions,
+//     this.backgroundColor,
+//     this.elevation,
+//     this.semanticLabel,
+//     this.shape,
+//   })  : assert(contentPadding != null),
+//         super(key: key);
+
+//   /// The (optional) title of the dialog is displayed in a large font at the top
+//   /// of the dialog.
+//   ///
+//   /// Typically a [Text] widget.
+//   final Widget title;
+
+//   /// Padding around the title.
+//   ///
+//   /// If there is no title, no padding will be provided. Otherwise, this padding
+//   /// is used.
+//   ///
+//   /// This property defaults to providing 24 pixels on the top, left, and right
+//   /// of the title. If the [content] is not null, then no bottom padding is
+//   /// provided (but see [contentPadding]). If it _is_ null, then an extra 20
+//   /// pixels of bottom padding is added to separate the [title] from the
+//   /// [actions].
+//   final EdgeInsetsGeometry titlePadding;
+
+//   /// Style for the text in the [title] of this [AlertDialog].
+//   ///
+//   /// If null, [DialogTheme.titleTextStyle] is used, if that's null, defaults to
+//   /// [ThemeData.textTheme.title].
+//   final TextStyle titleTextStyle;
+
+//   /// The (optional) content of the dialog is displayed in the center of the
+//   /// dialog in a lighter font.
+//   ///
+//   /// Typically this is a [SingleChildScrollView] that contains the dialog's
+//   /// message. As noted in the [AlertDialog] documentation, it's important
+//   /// to use a [SingleChildScrollView] if there's any risk that the content
+//   /// will not fit.
+//   final Widget content;
+
+//   /// Padding around the content.
+//   ///
+//   /// If there is no content, no padding will be provided. Otherwise, padding of
+//   /// 20 pixels is provided above the content to separate the content from the
+//   /// title, and padding of 24 pixels is provided on the left, right, and bottom
+//   /// to separate the content from the other edges of the dialog.
+//   final EdgeInsetsGeometry contentPadding;
+
+//   /// Style for the text in the [content] of this [AlertDialog].
+//   ///
+//   /// If null, [DialogTheme.contentTextStyle] is used, if that's null, defaults
+//   /// to [ThemeData.textTheme.subhead].
+//   final TextStyle contentTextStyle;
+
+//   /// The (optional) set of actions that are displayed at the bottom of the
+//   /// dialog.
+//   ///
+//   /// Typically this is a list of [FlatButton] widgets.
+//   ///
+//   /// These widgets will be wrapped in a [ButtonBar], which introduces 8 pixels
+//   /// of padding on each side.
+//   ///
+//   /// If the [title] is not null but the [content] _is_ null, then an extra 20
+//   /// pixels of padding is added above the [ButtonBar] to separate the [title]
+//   /// from the [actions].
+//   final List<Widget> actions;
+
+//   /// {@macro flutter.material.dialog.backgroundColor}
+//   final Color backgroundColor;
+
+//   /// {@macro flutter.material.dialog.elevation}
+//   /// {@macro flutter.material.material.elevation}
+//   final double elevation;
+
+//   /// The semantic label of the dialog used by accessibility frameworks to
+//   /// announce screen transitions when the dialog is opened and closed.
+//   ///
+//   /// If this label is not provided, a semantic label will be inferred from the
+//   /// [title] if it is not null.  If there is no title, the label will be taken
+//   /// from [MaterialLocalizations.alertDialogLabel].
+//   ///
+//   /// See also:
+//   ///
+//   ///  * [SemanticsConfiguration.isRouteName], for a description of how this
+//   ///    value is used.
+//   final String semanticLabel;
+
+//   /// {@macro flutter.material.dialog.shape}
+//   final ShapeBorder shape;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     assert(debugCheckHasMaterialLocalizations(context));
+//     final ThemeData theme = Theme.of(context);
+//     final DialogTheme dialogTheme = DialogTheme.of(context);
+//     final List<Widget> children = <Widget>[];
+//     String label = semanticLabel;
+
+//     if (title != null) {
+//       children.add(Padding(
+//         padding: titlePadding ??
+//             EdgeInsets.fromLTRB(24.0, 24.0, 24.0, content == null ? 20.0 : 0.0),
+//         child: DefaultTextStyle(
+//           style: titleTextStyle ??
+//               dialogTheme.titleTextStyle ??
+//               theme.textTheme.title,
+//           child: Semantics(
+//             child: title,
+//             namesRoute: true,
+//             container: true,
+//           ),
+//         ),
+//       ));
+//     } else {
+//       switch (defaultTargetPlatform) {
+//         case TargetPlatform.iOS:
+//           label = semanticLabel;
+//           break;
+//         case TargetPlatform.android:
+//         case TargetPlatform.fuchsia:
+//           label = semanticLabel ??
+//               MaterialLocalizations.of(context)?.alertDialogLabel;
+//       }
+//     }
+
+//     if (content != null) {
+//       children.add(Flexible(
+//         child: Padding(
+//           padding: contentPadding,
+//           child: DefaultTextStyle(
+//             style: contentTextStyle ??
+//                 dialogTheme.contentTextStyle ??
+//                 theme.textTheme.subhead,
+//             child: content,
+//           ),
+//         ),
+//       ));
+//     }
+
+//     if (actions != null) {
+//       children.add(ButtonTheme.bar(
+//         child: ButtonBar(
+//           children: actions,
+//         ),
+//       ));
+//     }
+
+//     Widget dialogChild = IntrinsicWidth(
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         crossAxisAlignment: CrossAxisAlignment.stretch,
+//         children: children,
+//       ),
+//     );
+
+//     if (label != null)
+//       dialogChild = Semantics(
+//         namesRoute: true,
+//         label: label,
+//         child: dialogChild,
+//       );
+
+//     return Dialog(
+//       backgroundColor: backgroundColor,
+//       elevation: elevation,
+//       shape: shape,
+//       child: dialogChild,
+//     );
+//   }
+// }
+
 @MyReflectable()
-class MaterialApp extends StatefulWidget {
-  /// Creates a MaterialApp.
+class MediaQuery extends InheritedWidget {
+  /// Creates a widget that provides [MediaQueryData] to its descendants.
   ///
-  /// At least one of [home], [routes], [onGenerateRoute], or [builder] must be
-  /// non-null. If only [routes] is given, it must include an entry for the
-  /// [Navigator.defaultRouteName] (`/`), since that is the route used when the
-  /// application is launched with an intent that specifies an otherwise
-  /// unsupported route.
-  ///
-  /// This class creates an instance of [WidgetsApp].
-  ///
-  /// The boolean arguments, [routes], and [navigatorObservers], must not be null.
-  const MaterialApp({
+  /// The [data] and [child] arguments must not be null.
+  const MediaQuery({
     Key key,
-    this.navigatorKey,
-    this.home,
-    this.routes = const <String, WidgetBuilder>{},
-    this.initialRoute,
-    this.onGenerateRoute,
-    this.onUnknownRoute,
-    this.navigatorObservers = const <NavigatorObserver>[],
-    this.builder,
-    this.title = '',
-    this.onGenerateTitle,
-    this.color,
-    this.theme,
-    this.darkTheme,
-    this.locale,
-    this.localizationsDelegates,
-    this.localeListResolutionCallback,
-    this.localeResolutionCallback,
-    this.supportedLocales = const <Locale>[Locale('en', 'US')],
-    this.debugShowMaterialGrid = false,
-    this.showPerformanceOverlay = false,
-    this.checkerboardRasterCacheImages = false,
-    this.checkerboardOffscreenLayers = false,
-    this.showSemanticsDebugger = false,
-    this.debugShowCheckedModeBanner = true,
-  })  : assert(routes != null),
-        assert(navigatorObservers != null),
-        assert(title != null),
-        assert(debugShowMaterialGrid != null),
-        assert(showPerformanceOverlay != null),
-        assert(checkerboardRasterCacheImages != null),
-        assert(checkerboardOffscreenLayers != null),
-        assert(showSemanticsDebugger != null),
-        assert(debugShowCheckedModeBanner != null),
-        super(key: key);
+    @required this.data,
+    @required Widget child,
+  })  : assert(child != null),
+        assert(data != null),
+        super(key: key, child: child);
 
-  /// {@macro flutter.widgets.widgetsApp.navigatorKey}
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  /// {@macro flutter.widgets.widgetsApp.home}
-  final Widget home;
-
-  /// The application's top-level routing table.
+  /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
+  /// the given context, but removes the specified paddings.
   ///
-  /// When a named route is pushed with [Navigator.pushNamed], the route name is
-  /// looked up in this map. If the name is present, the associated
-  /// [WidgetBuilder] is used to construct a [MaterialPageRoute] that performs
-  /// an appropriate transition, including [Hero] animations, to the new route.
+  /// This should be inserted into the widget tree when the [MediaQuery] padding
+  /// is consumed by a widget in such a way that the padding is no longer
+  /// exposed to the widget's descendants or siblings.
   ///
-  /// {@macro flutter.widgets.widgetsApp.routes}
-  final Map<String, WidgetBuilder> routes;
-
-  /// {@macro flutter.widgets.widgetsApp.initialRoute}
-  final String initialRoute;
-
-  /// {@macro flutter.widgets.widgetsApp.onGenerateRoute}
-  final RouteFactory onGenerateRoute;
-
-  /// {@macro flutter.widgets.widgetsApp.onUnknownRoute}
-  final RouteFactory onUnknownRoute;
-
-  /// {@macro flutter.widgets.widgetsApp.navigatorObservers}
-  final List<NavigatorObserver> navigatorObservers;
-
-  /// {@macro flutter.widgets.widgetsApp.builder}
+  /// The [context] argument is required, must not be null, and must have a
+  /// [MediaQuery] in scope.
   ///
-  /// Material specific features such as [showDialog] and [showMenu], and widgets
-  /// such as [Tooltip], [PopupMenuButton], also require a [Navigator] to properly
-  /// function.
-  final TransitionBuilder builder;
-
-  /// {@macro flutter.widgets.widgetsApp.title}
+  /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
+  /// must not be null. If all four are false (the default) then the returned
+  /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
+  /// particularly useful.
   ///
-  /// This value is passed unmodified to [WidgetsApp.title].
-  final String title;
-
-  /// {@macro flutter.widgets.widgetsApp.onGenerateTitle}
-  ///
-  /// This value is passed unmodified to [WidgetsApp.onGenerateTitle].
-  final GenerateAppTitle onGenerateTitle;
-
-  /// Default visual properties, like colors fonts and shapes, for this app's
-  /// material widgets.
-  ///
-  /// A second [darkTheme] [ThemeData] value, which is used when the underlying
-  /// platform requests a "dark mode" UI, can also be specified.
-  ///
-  /// The default value of this property is the value of [ThemeData.light()].
+  /// The [child] argument is required and must not be null.
   ///
   /// See also:
   ///
-  ///  * [MediaQueryData.platformBrightness], which indicates the platform's
-  ///    desired brightness and is used to automatically toggle between [theme]
-  ///    and [darkTheme] in [MaterialApp].
-  ///  * [ThemeData.brightness], which indicates the [Brightness] of a theme's
-  ///    colors.
-  final ThemeData theme;
+  ///  * [SafeArea], which both removes the padding from the [MediaQuery] and
+  ///    adds a [Padding] widget.
+  ///  * [MediaQueryData.padding], the affected property of the [MediaQueryData].
+  ///  * [new removeViewInsets], the same thing but for removing view insets.
+  factory MediaQuery.removePadding({
+    Key key,
+    @required BuildContext context,
+    bool removeLeft = false,
+    bool removeTop = false,
+    bool removeRight = false,
+    bool removeBottom = false,
+    @required Widget child,
+  }) {
+    return MediaQuery(
+      key: key,
+      data: MediaQuery.of(context).removePadding(
+        removeLeft: removeLeft,
+        removeTop: removeTop,
+        removeRight: removeRight,
+        removeBottom: removeBottom,
+      ),
+      child: child,
+    );
+  }
 
-  /// The [ThemeData] to use when the platform specifically requests a dark
-  /// themed UI.
+  /// Creates a new [MediaQuery] that inherits from the ambient [MediaQuery] from
+  /// the given context, but removes the specified view insets.
   ///
-  /// Host platforms such as Android Pie can request a system-wide "dark mode"
-  /// when entering battery saver mode.
+  /// This should be inserted into the widget tree when the [MediaQuery] view
+  /// insets are consumed by a widget in such a way that the view insets are no
+  /// longer exposed to the widget's descendants or siblings.
   ///
-  /// When the host platform requests a [Brightness.dark] mode, you may want to
-  /// supply a [ThemeData.brightness] that's also [Brightness.dark].
+  /// The [context] argument is required, must not be null, and must have a
+  /// [MediaQuery] in scope.
   ///
-  /// Uses [theme] instead when null. Defaults to the value of
-  /// [ThemeData.light()] when both [darkTheme] and [theme] are null.
+  /// The `removeLeft`, `removeTop`, `removeRight`, and `removeBottom` arguments
+  /// must not be null. If all four are false (the default) then the returned
+  /// [MediaQuery] reuses the ambient [MediaQueryData] unmodified, which is not
+  /// particularly useful.
+  ///
+  /// The [child] argument is required and must not be null.
   ///
   /// See also:
   ///
-  ///  * [MediaQueryData.platformBrightness], which indicates the platform's
-  ///    desired brightness and is used to automatically toggle between [theme]
-  ///    and [darkTheme] in [MaterialApp].
-  ///  * [ThemeData.brightness], which is typically set to the value of
-  ///    [MediaQueryData.platformBrightness].
-  final ThemeData darkTheme;
+  ///  * [MediaQueryData.viewInsets], the affected property of the [MediaQueryData].
+  ///  * [new removePadding], the same thing but for removing paddings.
+  factory MediaQuery.removeViewInsets({
+    Key key,
+    @required BuildContext context,
+    bool removeLeft = false,
+    bool removeTop = false,
+    bool removeRight = false,
+    bool removeBottom = false,
+    @required Widget child,
+  }) {
+    return MediaQuery(
+      key: key,
+      data: MediaQuery.of(context).removeViewInsets(
+        removeLeft: removeLeft,
+        removeTop: removeTop,
+        removeRight: removeRight,
+        removeBottom: removeBottom,
+      ),
+      child: child,
+    );
+  }
 
-  /// {@macro flutter.widgets.widgetsApp.color}
-  final Color color;
-
-  /// {@macro flutter.widgets.widgetsApp.locale}
-  final Locale locale;
-
-  /// {@macro flutter.widgets.widgetsApp.localizationsDelegates}
+  /// Contains information about the current media.
   ///
-  /// Internationalized apps that require translations for one of the locales
-  /// listed in [GlobalMaterialLocalizations] should specify this parameter
-  /// and list the [supportedLocales] that the application can handle.
+  /// For example, the [MediaQueryData.size] property contains the width and
+  /// height of the current window.
+  final MediaQueryData data;
+
+  /// The data from the closest instance of this class that encloses the given
+  /// context.
+  ///
+  /// You can use this function to query the size an orientation of the screen.
+  /// When that information changes, your widget will be scheduled to be rebuilt,
+  /// keeping your widget up-to-date.
+  ///
+  /// Typical usage is as follows:
   ///
   /// ```dart
-  /// import 'package:flutter_localizations/flutter_localizations.dart';
-  /// MaterialApp(
-  ///   localizationsDelegates: [
-  ///     // ... app-specific localization delegate[s] here
-  ///     GlobalMaterialLocalizations.delegate,
-  ///     GlobalWidgetsLocalizations.delegate,
-  ///   ],
-  ///   supportedLocales: [
-  ///     const Locale('en', 'US'), // English
-  ///     const Locale('he', 'IL'), // Hebrew
-  ///     // ... other locales the app supports
-  ///   ],
-  ///   // ...
-  /// )
+  /// MediaQueryData media = MediaQuery.of(context);
   /// ```
   ///
-  /// ## Adding localizations for a new locale
+  /// If there is no [MediaQuery] in scope, then this will throw an exception.
+  /// To return null if there is no [MediaQuery], then pass `nullOk: true`.
   ///
-  /// The information that follows applies to the unusual case of an app
-  /// adding translations for a language not already supported by
-  /// [GlobalMaterialLocalizations].
-  ///
-  /// Delegates that produce [WidgetsLocalizations] and [MaterialLocalizations]
-  /// are included automatically. Apps can provide their own versions of these
-  /// localizations by creating implementations of
-  /// [LocalizationsDelegate<WidgetsLocalizations>] or
-  /// [LocalizationsDelegate<MaterialLocalizations>] whose load methods return
-  /// custom versions of [WidgetsLocalizations] or [MaterialLocalizations].
-  ///
-  /// For example: to add support to [MaterialLocalizations] for a
-  /// locale it doesn't already support, say `const Locale('foo', 'BR')`,
-  /// one could just extend [DefaultMaterialLocalizations]:
-  ///
-  /// ```dart
-  /// class FooLocalizations extends DefaultMaterialLocalizations {
-  ///   FooLocalizations(Locale locale) : super(locale);
-  ///   @override
-  ///   String get okButtonLabel {
-  ///     if (locale == const Locale('foo', 'BR'))
-  ///       return 'foo';
-  ///     return super.okButtonLabel;
-  ///   }
-  /// }
-  ///
-  /// ```
-  ///
-  /// A `FooLocalizationsDelegate` is essentially just a method that constructs
-  /// a `FooLocalizations` object. We return a [SynchronousFuture] here because
-  /// no asynchronous work takes place upon "loading" the localizations object.
-  ///
-  /// ```dart
-  /// class FooLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
-  ///   const FooLocalizationsDelegate();
-  ///   @override
-  ///   Future<FooLocalizations> load(Locale locale) {
-  ///     return SynchronousFuture(FooLocalizations(locale));
-  ///   }
-  ///   @override
-  ///   bool shouldReload(FooLocalizationsDelegate old) => false;
-  /// }
-  /// ```
-  ///
-  /// Constructing a [MaterialApp] with a `FooLocalizationsDelegate` overrides
-  /// the automatically included delegate for [MaterialLocalizations] because
-  /// only the first delegate of each [LocalizationsDelegate.type] is used and
-  /// the automatically included delegates are added to the end of the app's
-  /// [localizationsDelegates] list.
-  ///
-  /// ```dart
-  /// MaterialApp(
-  ///   localizationsDelegates: [
-  ///     const FooLocalizationsDelegate(),
-  ///   ],
-  ///   // ...
-  /// )
-  /// ```
-  /// See also:
-  ///
-  ///  * [supportedLocales], which must be specified along with
-  ///    [localizationsDelegates].
-  ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
-  ///    which provides material localizations for many languages.
-  ///  * The Flutter Internationalization Tutorial,
-  ///    <https://flutter.dev/tutorials/internationalization/>.
-  final Iterable<LocalizationsDelegate<dynamic>> localizationsDelegates;
+  /// If you use this from a widget (e.g. in its build function), consider
+  /// calling [debugCheckHasMediaQuery].
+  static MediaQueryData of(BuildContext context, {bool nullOk = false}) {
+    assert(context != null);
+    assert(nullOk != null);
+    final MediaQuery query = context.inheritFromWidgetOfExactType(MediaQuery);
+    if (query != null) return query.data;
+    if (nullOk) return null;
+    throw FlutterError(
+        'MediaQuery.of() called with a context that does not contain a MediaQuery.\n'
+        'No MediaQuery ancestor could be found starting from the context that was passed '
+        'to MediaQuery.of(). This can happen because you do not have a WidgetsApp or '
+        'MaterialApp widget (those widgets introduce a MediaQuery), or it can happen '
+        'if the context you use comes from a widget above those widgets.\n'
+        'The context used was:\n'
+        '  $context');
+  }
 
-  /// {@macro flutter.widgets.widgetsApp.localeListResolutionCallback}
-  ///
-  /// This callback is passed along to the [WidgetsApp] built by this widget.
-  final LocaleListResolutionCallback localeListResolutionCallback;
+  /// Returns textScaleFactor for the nearest MediaQuery ancestor or 1.0, if
+  /// no such ancestor exists.
+  static double textScaleFactorOf(BuildContext context) {
+    return MediaQuery.of(context, nullOk: true)?.textScaleFactor ?? 1.0;
+  }
 
-  /// {@macro flutter.widgets.widgetsApp.localeResolutionCallback}
+  /// Returns platformBrightness for the nearest MediaQuery ancestor or
+  /// [Brightness.light], if no such ancestor exists.
   ///
-  /// This callback is passed along to the [WidgetsApp] built by this widget.
-  final LocaleResolutionCallback localeResolutionCallback;
+  /// Use of this method will cause the given [context] to rebuild any time that
+  /// any property of the ancestor [MediaQuery] changes.
+  static Brightness platformBrightnessOf(BuildContext context) {
+    return MediaQuery.of(context, nullOk: true)?.platformBrightness ??
+        Brightness.light;
+  }
 
-  /// {@macro flutter.widgets.widgetsApp.supportedLocales}
-  ///
-  /// It is passed along unmodified to the [WidgetsApp] built by this widget.
-  ///
-  /// See also:
-  ///
-  ///  * [localizationsDelegates], which must be specified for localized
-  ///    applications.
-  ///  * [GlobalMaterialLocalizations], a [localizationsDelegates] value
-  ///    which provides material localizations for many languages.
-  ///  * The Flutter Internationalization Tutorial,
-  ///    <https://flutter.dev/tutorials/internationalization/>.
-  final Iterable<Locale> supportedLocales;
-
-  /// Turns on a performance overlay.
-  ///
-  /// See also:
-  ///
-  ///  * <https://flutter.dev/debugging/#performanceoverlay>
-  final bool showPerformanceOverlay;
-
-  /// Turns on checkerboarding of raster cache images.
-  final bool checkerboardRasterCacheImages;
-
-  /// Turns on checkerboarding of layers rendered to offscreen bitmaps.
-  final bool checkerboardOffscreenLayers;
-
-  /// Turns on an overlay that shows the accessibility information
-  /// reported by the framework.
-  final bool showSemanticsDebugger;
-
-  /// {@macro flutter.widgets.widgetsApp.debugShowCheckedModeBanner}
-  final bool debugShowCheckedModeBanner;
-
-  /// Turns on a [GridPaper] overlay that paints a baseline grid
-  /// Material apps.
-  ///
-  /// Only available in checked mode.
-  ///
-  /// See also:
-  ///
-  ///  * <https://material.io/design/layout/spacing-methods.html>
-  final bool debugShowMaterialGrid;
+  /// Returns the boldText accessibility setting for the nearest MediaQuery
+  /// ancestor, or false if no such ancestor exists.
+  static bool boldTextOverride(BuildContext context) {
+    return MediaQuery.of(context, nullOk: true)?.boldText ?? false;
+  }
 
   @override
-  _MaterialAppState createState() => _MaterialAppState();
+  bool updateShouldNotify(MediaQuery oldWidget) => data != oldWidget.data;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+        DiagnosticsProperty<MediaQueryData>('data', data, showName: false));
+  }
 }
 
 void main() {}

@@ -645,6 +645,113 @@ class _ReflectorDomain {
   Map<ClassElement, Map<String, ExecutableElement>> _instanceMemberCache =
       <ClassElement, Map<String, ExecutableElement>>{};
 
+  Future<String> _staticMethodCode(
+      ExecutableElement executable, _ImportCollector importCollector) async {
+    FunctionType type = executable.type;
+
+    int requiredPositionalCount = type.normalParameterTypes.length;
+    int optionalPositionalCount = type.optionalParameterTypes.length;
+
+    List<String> parameterNames = type.parameters
+        .map((ParameterElement parameter) => parameter.name)
+        .toList();
+
+    List<String> namedParameterNames = type.namedParameterTypes.keys.toList();
+
+    // Special casing the `List` default constructor.
+    //
+    // After a bit of hesitation, we decided to special case `dart.core.List`.
+    // The issue is that the default constructor for `List` has a representation
+    // which is platform dependent and which is reflected imprecisely by the
+    // analyzer model: The analyzer data claims that it is external, and that
+    // its optional `length` argument has no default value. But it actually has
+    // two different default values, one on the vm and one in dart2js generated
+    // code. We handle this special case by ensuring that `length` is passed if
+    // it differs from `null`, and otherwise we perform the invocation of the
+    // constructor with no arguments; this will suppress the error in the case
+    // where the caller specifies an explicit `null` argument, but otherwise
+    // faithfully reproduce the behavior of non-reflective code, and that is
+    // probably the closest we can get. We could specify a different default
+    // argument (say, "Hello, world!") and then test for that value, but that
+    // would suppress an error in a very-hard-to-explain case, so that's safer
+    // in a sense, but too weird.
+    if (executable.library.isDartCore &&
+        executable.enclosingElement.name == "List" &&
+        executable.name == "") {
+      return "(b) => ([length]) => "
+          "b ? (length == null ? List() : List(length)) : null";
+    }
+
+    String positionals =
+        Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
+            .join(", ");
+
+    List<String> optionalsWithDefaultList = [];
+    for (int i = 0; i < optionalPositionalCount; i++) {
+      String code = await _extractDefaultValueCode(
+          importCollector, executable.parameters[requiredPositionalCount + i]);
+      String defaultPart = code.isEmpty ? "" : " = $code";
+      optionalsWithDefaultList
+          .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
+    }
+    String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
+
+    List<String> namedWithDefaultList = [];
+    for (int i = 0; i < namedParameterNames.length; i++) {
+      // Note that the use of `requiredPositionalCount + i` below relies
+      // on a language design where no parameter list can include
+      // both optional positional and named parameters, so if there are
+      // any named parameters then all optional parameters are named.
+      String code = await _extractDefaultValueCode(
+          importCollector, executable.parameters[requiredPositionalCount + i]);
+      String defaultPart = code.isEmpty ? "" : " = $code";
+      namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+    }
+    String namedWithDefaults = namedWithDefaultList.join(", ");
+
+    String optionalArguments = Iterable.generate(optionalPositionalCount,
+        (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
+    // String namedArguments =
+    //     namedParameterNames.map((String name) => "$name: $name").join(", ");
+    String namedArgumentsCode(String name) {
+      if (type.namedParameterTypes[name].name == "double") {
+        return "$name: $name == null ? $name : $name / 1.0";
+      }
+
+      return "$name: $name";
+    }
+
+    String namedArguments =
+        namedParameterNames.map((name) => namedArgumentsCode(name)).join(", ");
+
+    List<String> parameterParts = <String>[];
+    List<String> argumentParts = <String>[];
+
+    if (requiredPositionalCount != 0) {
+      parameterParts.add(positionals);
+      argumentParts.add(positionals);
+    }
+    if (optionalPositionalCount != 0) {
+      parameterParts.add("[$optionalsWithDefaults]");
+      argumentParts.add(optionalArguments);
+    }
+    if (namedParameterNames.isNotEmpty) {
+      parameterParts.add("{${namedWithDefaults}}");
+      argumentParts.add(namedArguments);
+    }
+
+    String doRunArgument = "b";
+    while (parameterNames.contains(doRunArgument)) {
+      doRunArgument = doRunArgument + "b";
+    }
+
+    String prefix = importCollector._getPrefix(executable.library);
+    // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
+    //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
+    //     '(${argumentParts.join(", ")}) : null');
+    return "(${parameterParts.join(', ')}) => ${await _nameOfStaticMethod(executable)}(${argumentParts.join(", ")})";
+  }
+
   /// Returns a string that evaluates to a closure invoking [constructor] with
   /// the given arguments.
   /// [importCollector] is used to record all the imports needed to make the
@@ -1415,6 +1522,12 @@ class _ReflectorDomain {
           String code = await _constructorCode(constructor, importCollector);
           // mapEntries.add('r"${constructor.name}": $code');
           mapEntries.add("\"${constructor.name}\": $code");
+        }
+      }
+      for (ExecutableElement executable in classDomain._staticMembers) {
+        if (executable is MethodElementImpl && !executable.isAbstract) {
+          String code = await _staticMethodCode(executable, importCollector);
+          mapEntries.add("\"${executable.name}\": $code");
         }
       }
       // constructorsCode = _formatAsMap(mapEntries);
@@ -4375,6 +4488,14 @@ int _declarationDescriptor(ExecutableElement element) {
   return result;
 }
 
+Future<String> _nameOfStaticMethod(ExecutableElement element) async {
+  String name = "${element.enclosingElement.name}.${element.name}";
+  if (_isPrivateName(name)) {
+    await _severe("Cannot access private name $name", element);
+  }
+  return name;
+}
+
 Future<String> _nameOfConstructor(ConstructorElement element) async {
   String name = element.name == ""
       ? element.enclosingElement.name
@@ -4415,6 +4536,8 @@ Future<String> _extractConstantCode(
   }
 
   Future<String> helper(Expression expression) async {
+    return "${expression.toString()}";
+
     if (expression is ListLiteral) {
       List<String> elements = [];
       for (CollectionElement collectionElement in expression.elements) {
