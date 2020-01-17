@@ -1442,6 +1442,10 @@ class _ReflectorDomain {
         classDomain._declaredFields.map((FieldElement element) {
       return fields.indexOf(element) + fieldsOffset;
     });
+    String fieldProxyCode = classDomain._declaredFields
+        .map((field) =>
+            "\"${field.name}\": (instance) => instance.${field.name}")
+        .join(", ");
 
     // All the elements in the behavioral interface go after the
     // fields in [memberMirrors], so they must get an offset of
@@ -1641,6 +1645,17 @@ class _ReflectorDomain {
         Map<String, Function> _typeMethodMap() {
           return {
             $constructorsCode
+          };
+        }
+
+        @override
+        MapEntry<String, Map<String, Function>> getterMap() {
+          return MapEntry("${classDomain._simpleName}", this._getterMap());
+        }
+
+        Map<String, Function> _getterMap() {
+          return {
+            $fieldProxyCode
           };
         }
       }
