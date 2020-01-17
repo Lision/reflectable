@@ -682,8 +682,6 @@ class _ReflectorDomain {
           "b ? (length == null ? List() : List(length)) : null";
     }
 
-    String _positionalParamterCode(ParameterElement parameter) =>
-        _paramterCode(parameter.name, parameter.type.name);
     String positionals =
         Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
             .join(", ");
@@ -717,10 +715,10 @@ class _ReflectorDomain {
         (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
     // String namedArguments =
     //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String _namedArgumentsCode(String name) =>
-        _paramterCode(name, type.namedParameterTypes[name].name);
-    String namedArguments =
-        namedParameterNames.map((name) => _namedArgumentsCode(name)).join(", ");
+    String namedArguments = namedParameterNames
+        .map(
+            (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
+        .join(", ");
 
     List<String> parameterParts = <String>[];
     List<String> argumentParts = <String>[];
@@ -750,8 +748,16 @@ class _ReflectorDomain {
     return "(${parameterParts.join(', ')}) => ${await _nameOfStaticMethod(executable)}(${argumentParts.join(", ")})";
   }
 
-  String _paramterCode(String name, String typeName) {
-    if (typeName == "double") {
+  String _positionalParamterCode(ParameterElement parameter) {
+    if (parameter.type.name == "double") {
+      return "${parameter.name} == null ? ${parameter.name} : ${parameter.name} / 1.0";
+    }
+
+    return "${parameter.name}";
+  }
+
+  String _namedArgumentsCode(String name, DartType type) {
+    if (type.name == "double") {
       return "$name: $name == null ? $name : $name / 1.0";
     }
 
@@ -804,8 +810,6 @@ class _ReflectorDomain {
           "b ? (length == null ? List() : List(length)) : null";
     }
 
-    String _positionalParamterCode(ParameterElement parameter) =>
-        _paramterCode(parameter.name, parameter.type.name);
     String positionals =
         Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
             .join(", ");
@@ -839,10 +843,10 @@ class _ReflectorDomain {
         (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
     // String namedArguments =
     //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String _namedArgumentsCode(String name) =>
-        _paramterCode(name, type.namedParameterTypes[name].name);
-    String namedArguments =
-        namedParameterNames.map((name) => _namedArgumentsCode(name)).join(", ");
+    String namedArguments = namedParameterNames
+        .map(
+            (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
+        .join(", ");
 
     List<String> parameterParts = <String>[];
     List<String> argumentParts = <String>[];
@@ -1123,10 +1127,10 @@ class _ReflectorDomain {
             importCollector,
             typedefs));
       }
-      for (TypeParameterElement typeParameterElement in typeParameters.items) {
-        typeMirrorsList.add(await _typeParameterMirrorCode(
-            typeParameterElement, importCollector, objectClassElement));
-      }
+      // for (TypeParameterElement typeParameterElement in typeParameters.items) {
+      //   typeMirrorsList.add(await _typeParameterMirrorCode(
+      //       typeParameterElement, importCollector, objectClassElement));
+      // }
     }
     // String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
     String classMirrorsCode = typeMirrorsList.join("\n");
@@ -1539,7 +1543,7 @@ class _ReflectorDomain {
         }
       }
       // constructorsCode = _formatAsMap(mapEntries);
-      constructorsCode = mapEntries.join(", ");
+      constructorsCode = mapEntries.join(", \n");
     }
 
     String staticGettersCode = "const {}";
@@ -1626,114 +1630,115 @@ class _ReflectorDomain {
       }));
     }
 
-    if (classElement.typeParameters.isEmpty) {
-      // return 'r.NonGenericClassMirrorImpl(r"${classDomain._simpleName}", '
-      //     'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
-      //     '${await _constConstructionCode(importCollector)}, '
-      //     '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
-      //     '$superclassIndex, $staticGettersCode, $staticSettersCode, '
-      //     '$constructorsCode, $ownerIndex, $mixinIndex, '
-      //     '$superinterfaceIndices, $classMetadataCode, '
-      //     '$parameterListShapesCode)';
-      return '''
-      class Proxy${classDomain._simpleName} extends ProxyTypeBase {
-        @override
-        MapEntry<String, Map<String, Function>> typeMethodMap() {
-          return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
-        }
+    // if (classElement.typeParameters.isEmpty) {
+    //   return 'r.NonGenericClassMirrorImpl(r"${classDomain._simpleName}", '
+    //       'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
+    //       '${await _constConstructionCode(importCollector)}, '
+    //       '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
+    //       '$superclassIndex, $staticGettersCode, $staticSettersCode, '
+    //       '$constructorsCode, $ownerIndex, $mixinIndex, '
+    //       '$superinterfaceIndices, $classMetadataCode, '
+    //       '$parameterListShapesCode)';
+    // } else {
+    //   // We are able to match up a given instance with a given generic type
+    //   // by checking that the instance `is` an instance of the fully dynamic
+    //   // instance of that generic type (for the generic class `List`, that is
+    //   // `List<dynamic>`), and not an instance of any of its immediate subtypes,
+    //   // if any. [isCheckCode] is a function which will test that its argument
+    //   // (1) `is` an instance of the fully dynamic instance of the generic
+    //   // class modeled by [classElement], and (2) that it is not an instance
+    //   // of the fully dynamic instance of any of the classes that `extends` or
+    //   // `implements` this [classElement].
+    //   List<String> isCheckList = [];
+    //   if (classElement.isPrivate ||
+    //       classElement.isAbstract ||
+    //       (classElement is MixinApplication &&
+    //           !classElement.isMixinApplication) ||
+    //       !await _isImportable(classElement, _generatedLibraryId, _resolver)) {
+    //     // Note that this location is dead code until we get support for
+    //     // anonymous mixin applications using type arguments as generic
+    //     // classes (currently, no classes will pass the tests above). See
+    //     // https://github.com/dart-lang/sdk/issues/25344 for more details.
+    //     // However, the result that we will return is well-defined, because
+    //     // no object can be an instance of an anonymous mixin application.
+    //     isCheckList.add("(o) => false");
+    //   } else {
+    //     String prefix = importCollector._getPrefix(classElement.library);
+    //     isCheckList.add("(o) { return o is $prefix${classElement.name}");
 
-        Map<String, Function> _typeMethodMap() {
-          return {
-            $constructorsCode
-          };
-        }
+    //     // Add 'is checks' to [list], based on [classElement].
+    //     Future<void> helper(
+    //         List<String> list, ClassElement classElement) async {
+    //       Iterable<ClassElement> subtypes =
+    //           _world.subtypes[classElement] ?? <ClassElement>[];
+    //       for (ClassElement subtype in subtypes) {
+    //         if (subtype.isPrivate ||
+    //             subtype.isAbstract ||
+    //             (subtype is MixinApplication && !subtype.isMixinApplication) ||
+    //             !await _isImportable(subtype, _generatedLibraryId, _resolver)) {
+    //           await helper(list, subtype);
+    //         } else {
+    //           String prefix = importCollector._getPrefix(subtype.library);
+    //           list.add(" && o is! $prefix${subtype.name}");
+    //         }
+    //       }
+    //     }
 
-        @override
-        MapEntry<String, Map<String, Function>> getterMap() {
-          return MapEntry("${classDomain._simpleName}", this._getterMap());
-        }
+    //     await helper(isCheckList, classElement);
+    //     isCheckList.add("; }");
+    //   }
+    //   String isCheckCode = isCheckList.join();
 
-        Map<String, Function> _getterMap() {
-          return {
-            $fieldProxyCode
-          };
-        }
-      }
-      ''';
-    } else {
-      // We are able to match up a given instance with a given generic type
-      // by checking that the instance `is` an instance of the fully dynamic
-      // instance of that generic type (for the generic class `List`, that is
-      // `List<dynamic>`), and not an instance of any of its immediate subtypes,
-      // if any. [isCheckCode] is a function which will test that its argument
-      // (1) `is` an instance of the fully dynamic instance of the generic
-      // class modeled by [classElement], and (2) that it is not an instance
-      // of the fully dynamic instance of any of the classes that `extends` or
-      // `implements` this [classElement].
-      List<String> isCheckList = [];
-      if (classElement.isPrivate ||
-          classElement.isAbstract ||
-          (classElement is MixinApplication &&
-              !classElement.isMixinApplication) ||
-          !await _isImportable(classElement, _generatedLibraryId, _resolver)) {
-        // Note that this location is dead code until we get support for
-        // anonymous mixin applications using type arguments as generic
-        // classes (currently, no classes will pass the tests above). See
-        // https://github.com/dart-lang/sdk/issues/25344 for more details.
-        // However, the result that we will return is well-defined, because
-        // no object can be an instance of an anonymous mixin application.
-        isCheckList.add("(o) => false");
-      } else {
-        String prefix = importCollector._getPrefix(classElement.library);
-        isCheckList.add("(o) { return o is $prefix${classElement.name}");
+    //   String typeParameterIndices = "null";
+    //   if (_capabilities._impliesDeclarations) {
+    //     int indexOf(TypeParameterElement typeParameter) =>
+    //         typeParameters.indexOf(typeParameter) + typeParametersOffset;
+    //     typeParameterIndices = _formatAsConstList(
+    //         'int',
+    //         classElement.typeParameters
+    //             .where(typeParameters.items.contains)
+    //             .map(indexOf));
+    //   }
 
-        // Add 'is checks' to [list], based on [classElement].
-        Future<void> helper(
-            List<String> list, ClassElement classElement) async {
-          Iterable<ClassElement> subtypes =
-              _world.subtypes[classElement] ?? <ClassElement>[];
-          for (ClassElement subtype in subtypes) {
-            if (subtype.isPrivate ||
-                subtype.isAbstract ||
-                (subtype is MixinApplication && !subtype.isMixinApplication) ||
-                !await _isImportable(subtype, _generatedLibraryId, _resolver)) {
-              await helper(list, subtype);
-            } else {
-              String prefix = importCollector._getPrefix(subtype.library);
-              list.add(" && o is! $prefix${subtype.name}");
-            }
-          }
-        }
+    //   int dynamicReflectedTypeIndex = _dynamicTypeCodeIndex(classElement.type,
+    //       await classes, reflectedTypes, reflectedTypesOffset, typedefs);
 
-        await helper(isCheckList, classElement);
-        isCheckList.add("; }");
-      }
-      String isCheckCode = isCheckList.join();
+    //   return 'r.GenericClassMirrorImpl(r"${classDomain._simpleName}", '
+    //       'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
+    //       '${await _constConstructionCode(importCollector)}, '
+    //       '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
+    //       '$superclassIndex, $staticGettersCode, $staticSettersCode, '
+    //       '$constructorsCode, $ownerIndex, $mixinIndex, '
+    //       '$superinterfaceIndices, $classMetadataCode, '
+    //       '$parameterListShapesCode, $isCheckCode, '
+    //       '$typeParameterIndices, $dynamicReflectedTypeIndex)';
+    // }
 
-      String typeParameterIndices = "null";
-      if (_capabilities._impliesDeclarations) {
-        int indexOf(TypeParameterElement typeParameter) =>
-            typeParameters.indexOf(typeParameter) + typeParametersOffset;
-        typeParameterIndices = _formatAsConstList(
-            'int',
-            classElement.typeParameters
-                .where(typeParameters.items.contains)
-                .map(indexOf));
+    return '''
+    class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+      @override
+      MapEntry<String, Map<String, Function>> typeMethodMap() {
+        return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
       }
 
-      int dynamicReflectedTypeIndex = _dynamicTypeCodeIndex(classElement.type,
-          await classes, reflectedTypes, reflectedTypesOffset, typedefs);
+      Map<String, Function> _typeMethodMap() {
+        return {
+          $constructorsCode
+        };
+      }
 
-      return 'r.GenericClassMirrorImpl(r"${classDomain._simpleName}", '
-          'r"${_qualifiedName(classElement)}", $descriptor, $classIndex, '
-          '${await _constConstructionCode(importCollector)}, '
-          '$declarationsCode, $instanceMembersCode, $staticMembersCode, '
-          '$superclassIndex, $staticGettersCode, $staticSettersCode, '
-          '$constructorsCode, $ownerIndex, $mixinIndex, '
-          '$superinterfaceIndices, $classMetadataCode, '
-          '$parameterListShapesCode, $isCheckCode, '
-          '$typeParameterIndices, $dynamicReflectedTypeIndex)';
+      @override
+      MapEntry<String, Map<String, Function>> getterMap() {
+        return MapEntry("${classDomain._simpleName}", this._getterMap());
+      }
+
+      Map<String, Function> _getterMap() {
+        return {
+          $fieldProxyCode
+        };
+      }
     }
+    ''';
   }
 
   Future<String> _methodMirrorCode(
