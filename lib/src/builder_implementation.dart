@@ -1548,32 +1548,6 @@ class _ReflectorDomain {
       Map<FunctionType, int> typedefs) async {
     int descriptor = _classDescriptor(classDomain._classElement);
 
-    // Getter/Setter Proxy Code
-    List<PropertyAccessorElement> propertyAccessors = [];
-    members.items.forEach((executable) => executable is PropertyAccessorElement
-        ? propertyAccessors.add(executable)
-        : null);
-    List<PropertyAccessorElement> getterAccessor = propertyAccessors
-        .where((propertyAccessor) => propertyAccessor.isGetter)
-        .toList();
-    String getterProxyCode = getterAccessor
-        .where((propertyAccessor) =>
-            propertyAccessor.enclosingElement.displayName ==
-            classDomain._simpleName)
-        .map((propertyAccessor) =>
-            "\"${propertyAccessor.name}\": (instance) => instance.${propertyAccessor.name}")
-        .join(", \n");
-    List<PropertyAccessorElement> setterAccessor = propertyAccessors
-        .where((propertyAccessor) => propertyAccessor.isSetter)
-        .toList();
-    String setterProxyCode = setterAccessor
-        .where((propertyAccessor) =>
-            propertyAccessor.enclosingElement.displayName ==
-            classDomain._simpleName)
-        .map((propertyAccessor) =>
-            "\"${propertyAccessor.displayName}\": (instance, value) => instance.${propertyAccessor.displayName} = value")
-        .join(", \n");
-
     // Fields go first in [memberMirrors], so they will get the
     // same index as in [fields].
     Iterable<int> fieldsIndices =
@@ -1654,27 +1628,59 @@ class _ReflectorDomain {
                   : "${constants.NO_CAPABILITY_INDEX}";
     }
 
-    String constructorsCode, methodCode;
-    if (classElement is MixinApplication) {
-      constructorsCode = 'const {}';
-      methodCode = '';
+    // String constructorAndStaticMethodsProxyCode,
+    //     methodProxyCode,
+    //     getterProxyCode,
+    //     setterProxyCode;
+    // if (classElement is MixinApplication) {
+    //   constructorAndStaticMethodsProxyCode = 'const {}';
+    //   methodProxyCode = '';
+    //   getterProxyCode = '';
+    //   setterProxyCode = '';
+    // } else {
+    // constructors
+    List<String> mapEntries = [];
+    for (ConstructorElement constructor in classDomain._constructors) {
+      if (constructor.isFactory || !constructor.enclosingElement.isAbstract) {
+        String code = await _methodProxyCode(constructor, importCollector);
+        // mapEntries.add('r"${constructor.name}": $code');
+        mapEntries.add("\"${constructor.name}\": $code");
+      }
+    }
+
+    // static methods
+    for (ExecutableElement executable in classDomain._staticMembers) {
+      if (executable is MethodElementImpl && !executable.isAbstract) {
+        String code = await _methodProxyCode(executable, importCollector);
+        mapEntries.add("\"${executable.name}\": $code");
+      }
+    }
+    // constructorsCode = _formatAsMap(mapEntries);
+    String constructorAndStaticMethodsProxyCode = mapEntries.join(", \n");
+
+    // getter methods
+    List<PropertyAccessorElement> getterAccessor = classDomain._accessors
+        .where((propertyAccessor) => propertyAccessor.isGetter)
+        .toList();
+    String getterProxyCode = getterAccessor
+        .map((propertyAccessor) =>
+            "\"${propertyAccessor.name}\": (instance) => instance.${propertyAccessor.name}")
+        .join(", \n");
+
+    // setter methods
+    List<PropertyAccessorElement> setterAccessor = classDomain._accessors
+        .where((propertyAccessor) => propertyAccessor.isSetter)
+        .toList();
+    String setterProxyCode = setterAccessor
+        .map((propertyAccessor) =>
+            "\"${propertyAccessor.displayName}\": (instance, value) => instance.${propertyAccessor.displayName} = value")
+        .join(", \n");
+
+    // methods
+    String methodProxyCode;
+    if (classDomain._classElement.isAbstract) {
+      methodProxyCode = "";
     } else {
-      List<String> mapEntries = [];
-      for (ConstructorElement constructor in classDomain._constructors) {
-        if (constructor.isFactory || !constructor.enclosingElement.isAbstract) {
-          String code = await _methodProxyCode(constructor, importCollector);
-          // mapEntries.add('r"${constructor.name}": $code');
-          mapEntries.add("\"${constructor.name}\": $code");
-        }
-      }
-      for (ExecutableElement executable in classDomain._staticMembers) {
-        if (executable is MethodElementImpl && !executable.isAbstract) {
-          String code = await _methodProxyCode(executable, importCollector);
-          mapEntries.add("\"${executable.name}\": $code");
-        }
-      }
-      // constructorsCode = _formatAsMap(mapEntries);
-      constructorsCode = mapEntries.join(", \n");
       List<String> methodEntries = [];
       for (MethodElement method in classDomain._declaredMethods) {
         if (!method.isStatic) {
@@ -1682,8 +1688,9 @@ class _ReflectorDomain {
           methodEntries.add("\"${method.name}\": $code");
         }
       }
-      methodCode = methodEntries.join(", \n");
+      methodProxyCode = methodEntries.join(", \n");
     }
+    // }
 
     String staticGettersCode = "const {}";
     String staticSettersCode = "const {}";
@@ -1862,7 +1869,7 @@ class _ReflectorDomain {
 
       Map<String, Function> _typeMethodMap() {
         return {
-          $constructorsCode
+          $constructorAndStaticMethodsProxyCode
         };
       }
 
@@ -1895,7 +1902,7 @@ class _ReflectorDomain {
 
       Map<String, Function> _methodMap() {
         return {
-          $methodCode
+          $methodProxyCode
         };
       }
     }
