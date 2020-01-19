@@ -1683,7 +1683,7 @@ class _ReflectorDomain {
     } else {
       List<String> methodEntries = [];
       for (MethodElement method in classDomain._declaredMethods) {
-        if (!method.isStatic) {
+        if (!method.isStatic && !method.isOperator) {
           String code = await _methodProxyCode(method, importCollector);
           methodEntries.add("\"${method.name}\": $code");
         }
