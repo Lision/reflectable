@@ -645,7 +645,7 @@ class _ReflectorDomain {
   Map<ClassElement, Map<String, ExecutableElement>> _instanceMemberCache =
       <ClassElement, Map<String, ExecutableElement>>{};
 
-  Future<String> _methodCode(
+  Future<String> _methodProxyCode(
       ExecutableElement executable, _ImportCollector importCollector) async {
     FunctionType type = executable.type;
 
@@ -745,112 +745,116 @@ class _ReflectorDomain {
     // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
     //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
     //     '(${argumentParts.join(", ")}) : null');
-    parameterParts.insert(0, "instance");
-    return "(${parameterParts.join(', ')}) => ${await _nameOfMethod(executable)}(${argumentParts.join(", ")})";
+    if (executable.isStatic || executable is ConstructorElement) {
+      // no logic
+    } else {
+      parameterParts.insert(0, "instance");
+    }
+    return "(${parameterParts.join(', ')}) => ${await _proxyNameOfMethod(executable)}(${argumentParts.join(", ")})";
   }
 
-  Future<String> _staticMethodCode(
-      ExecutableElement executable, _ImportCollector importCollector) async {
-    FunctionType type = executable.type;
+  // Future<String> _staticMethodCode(
+  //     ExecutableElement executable, _ImportCollector importCollector) async {
+  //   FunctionType type = executable.type;
 
-    int requiredPositionalCount = type.normalParameterTypes.length;
-    int optionalPositionalCount = type.optionalParameterTypes.length;
+  //   int requiredPositionalCount = type.normalParameterTypes.length;
+  //   int optionalPositionalCount = type.optionalParameterTypes.length;
 
-    List<String> parameterNames = type.parameters
-        .map((ParameterElement parameter) => parameter.name)
-        .toList();
+  //   List<String> parameterNames = type.parameters
+  //       .map((ParameterElement parameter) => parameter.name)
+  //       .toList();
 
-    List<String> namedParameterNames = type.namedParameterTypes.keys.toList();
+  //   List<String> namedParameterNames = type.namedParameterTypes.keys.toList();
 
-    // Special casing the `List` default constructor.
-    //
-    // After a bit of hesitation, we decided to special case `dart.core.List`.
-    // The issue is that the default constructor for `List` has a representation
-    // which is platform dependent and which is reflected imprecisely by the
-    // analyzer model: The analyzer data claims that it is external, and that
-    // its optional `length` argument has no default value. But it actually has
-    // two different default values, one on the vm and one in dart2js generated
-    // code. We handle this special case by ensuring that `length` is passed if
-    // it differs from `null`, and otherwise we perform the invocation of the
-    // constructor with no arguments; this will suppress the error in the case
-    // where the caller specifies an explicit `null` argument, but otherwise
-    // faithfully reproduce the behavior of non-reflective code, and that is
-    // probably the closest we can get. We could specify a different default
-    // argument (say, "Hello, world!") and then test for that value, but that
-    // would suppress an error in a very-hard-to-explain case, so that's safer
-    // in a sense, but too weird.
-    if (executable.library.isDartCore &&
-        executable.enclosingElement.name == "List" &&
-        executable.name == "") {
-      return "(b) => ([length]) => "
-          "b ? (length == null ? List() : List(length)) : null";
-    }
+  //   // Special casing the `List` default constructor.
+  //   //
+  //   // After a bit of hesitation, we decided to special case `dart.core.List`.
+  //   // The issue is that the default constructor for `List` has a representation
+  //   // which is platform dependent and which is reflected imprecisely by the
+  //   // analyzer model: The analyzer data claims that it is external, and that
+  //   // its optional `length` argument has no default value. But it actually has
+  //   // two different default values, one on the vm and one in dart2js generated
+  //   // code. We handle this special case by ensuring that `length` is passed if
+  //   // it differs from `null`, and otherwise we perform the invocation of the
+  //   // constructor with no arguments; this will suppress the error in the case
+  //   // where the caller specifies an explicit `null` argument, but otherwise
+  //   // faithfully reproduce the behavior of non-reflective code, and that is
+  //   // probably the closest we can get. We could specify a different default
+  //   // argument (say, "Hello, world!") and then test for that value, but that
+  //   // would suppress an error in a very-hard-to-explain case, so that's safer
+  //   // in a sense, but too weird.
+  //   if (executable.library.isDartCore &&
+  //       executable.enclosingElement.name == "List" &&
+  //       executable.name == "") {
+  //     return "(b) => ([length]) => "
+  //         "b ? (length == null ? List() : List(length)) : null";
+  //   }
 
-    String positionals =
-        Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
-            .join(", ");
-    String positionalArguments = Iterable.generate(requiredPositionalCount,
-        (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
+  //   String positionals =
+  //       Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
+  //           .join(", ");
+  //   String positionalArguments = Iterable.generate(requiredPositionalCount,
+  //       (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
 
-    List<String> optionalsWithDefaultList = [];
-    for (int i = 0; i < optionalPositionalCount; i++) {
-      String code = await _extractDefaultValueCode(
-          importCollector, executable.parameters[requiredPositionalCount + i]);
-      String defaultPart = code.isEmpty ? "" : " = $code";
-      optionalsWithDefaultList
-          .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
-    }
-    String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
+  //   List<String> optionalsWithDefaultList = [];
+  //   for (int i = 0; i < optionalPositionalCount; i++) {
+  //     String code = await _extractDefaultValueCode(
+  //         importCollector, executable.parameters[requiredPositionalCount + i]);
+  //     String defaultPart = code.isEmpty ? "" : " = $code";
+  //     optionalsWithDefaultList
+  //         .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
+  //   }
+  //   String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
 
-    List<String> namedWithDefaultList = [];
-    for (int i = 0; i < namedParameterNames.length; i++) {
-      // Note that the use of `requiredPositionalCount + i` below relies
-      // on a language design where no parameter list can include
-      // both optional positional and named parameters, so if there are
-      // any named parameters then all optional parameters are named.
-      String code = await _extractDefaultValueCode(
-          importCollector, executable.parameters[requiredPositionalCount + i]);
-      String defaultPart = code.isEmpty ? "" : " = $code";
-      namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
-    }
-    String namedWithDefaults = namedWithDefaultList.join(", ");
+  //   List<String> namedWithDefaultList = [];
+  //   for (int i = 0; i < namedParameterNames.length; i++) {
+  //     // Note that the use of `requiredPositionalCount + i` below relies
+  //     // on a language design where no parameter list can include
+  //     // both optional positional and named parameters, so if there are
+  //     // any named parameters then all optional parameters are named.
+  //     String code = await _extractDefaultValueCode(
+  //         importCollector, executable.parameters[requiredPositionalCount + i]);
+  //     String defaultPart = code.isEmpty ? "" : " = $code";
+  //     namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+  //   }
+  //   String namedWithDefaults = namedWithDefaultList.join(", ");
 
-    String optionalArguments = Iterable.generate(optionalPositionalCount,
-        (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
-    // String namedArguments =
-    //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String namedArguments = namedParameterNames
-        .map(
-            (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
-        .join(", ");
+  //   String optionalArguments = Iterable.generate(optionalPositionalCount,
+  //       (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
+  //   // String namedArguments =
+  //   //     namedParameterNames.map((String name) => "$name: $name").join(", ");
+  //   String namedArguments = namedParameterNames
+  //       .map(
+  //           (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
+  //       .join(", ");
 
-    List<String> parameterParts = <String>[];
-    List<String> argumentParts = <String>[];
+  //   List<String> parameterParts = <String>[];
+  //   List<String> argumentParts = <String>[];
 
-    if (requiredPositionalCount != 0) {
-      parameterParts.add(positionals);
-      argumentParts.add(positionalArguments);
-    }
-    if (optionalPositionalCount != 0) {
-      parameterParts.add("[$optionalsWithDefaults]");
-      argumentParts.add(optionalArguments);
-    }
-    if (namedParameterNames.isNotEmpty) {
-      parameterParts.add("{${namedWithDefaults}}");
-      argumentParts.add(namedArguments);
-    }
+  //   if (requiredPositionalCount != 0) {
+  //     parameterParts.add(positionals);
+  //     argumentParts.add(positionalArguments);
+  //   }
+  //   if (optionalPositionalCount != 0) {
+  //     parameterParts.add("[$optionalsWithDefaults]");
+  //     argumentParts.add(optionalArguments);
+  //   }
+  //   if (namedParameterNames.isNotEmpty) {
+  //     parameterParts.add("{${namedWithDefaults}}");
+  //     argumentParts.add(namedArguments);
+  //   }
 
-    String doRunArgument = "b";
-    while (parameterNames.contains(doRunArgument)) {
-      doRunArgument = doRunArgument + "b";
-    }
+  //   String doRunArgument = "b";
+  //   while (parameterNames.contains(doRunArgument)) {
+  //     doRunArgument = doRunArgument + "b";
+  //   }
 
-    String prefix = importCollector._getPrefix(executable.library);
-    // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
-    //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
-    //     '(${argumentParts.join(", ")}) : null');
-    return "(${parameterParts.join(', ')}) => ${await _nameOfStaticMethod(executable)}(${argumentParts.join(", ")})";
-  }
+  //   String prefix = importCollector._getPrefix(executable.library);
+  //   // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
+  //   //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
+  //   //     '(${argumentParts.join(", ")}) : null');
+  //   return "(${parameterParts.join(', ')}) => ${await _nameOfStaticMethod(executable)}(${argumentParts.join(", ")})";
+  // }
 
   String _positionalParamterCode(ParameterElement parameter) {
     if (parameter.type.name == "double") {
@@ -877,108 +881,108 @@ class _ReflectorDomain {
   /// For example for a constructor Foo(x, {y: 3}):
   /// returns "(x, {y: 3}) => prefix1.Foo(x, y)", and records an import of
   /// the library of `Foo` associated with prefix1 in [importCollector].
-  Future<String> _constructorCode(
-      ConstructorElement constructor, _ImportCollector importCollector) async {
-    FunctionType type = constructor.type;
+  // Future<String> _constructorCode(
+  //     ConstructorElement constructor, _ImportCollector importCollector) async {
+  //   FunctionType type = constructor.type;
 
-    int requiredPositionalCount = type.normalParameterTypes.length;
-    int optionalPositionalCount = type.optionalParameterTypes.length;
+  //   int requiredPositionalCount = type.normalParameterTypes.length;
+  //   int optionalPositionalCount = type.optionalParameterTypes.length;
 
-    List<String> parameterNames = type.parameters
-        .map((ParameterElement parameter) => parameter.name)
-        .toList();
+  //   List<String> parameterNames = type.parameters
+  //       .map((ParameterElement parameter) => parameter.name)
+  //       .toList();
 
-    List<String> namedParameterNames = type.namedParameterTypes.keys.toList();
+  //   List<String> namedParameterNames = type.namedParameterTypes.keys.toList();
 
-    // Special casing the `List` default constructor.
-    //
-    // After a bit of hesitation, we decided to special case `dart.core.List`.
-    // The issue is that the default constructor for `List` has a representation
-    // which is platform dependent and which is reflected imprecisely by the
-    // analyzer model: The analyzer data claims that it is external, and that
-    // its optional `length` argument has no default value. But it actually has
-    // two different default values, one on the vm and one in dart2js generated
-    // code. We handle this special case by ensuring that `length` is passed if
-    // it differs from `null`, and otherwise we perform the invocation of the
-    // constructor with no arguments; this will suppress the error in the case
-    // where the caller specifies an explicit `null` argument, but otherwise
-    // faithfully reproduce the behavior of non-reflective code, and that is
-    // probably the closest we can get. We could specify a different default
-    // argument (say, "Hello, world!") and then test for that value, but that
-    // would suppress an error in a very-hard-to-explain case, so that's safer
-    // in a sense, but too weird.
-    if (constructor.library.isDartCore &&
-        constructor.enclosingElement.name == "List" &&
-        constructor.name == "") {
-      return "(b) => ([length]) => "
-          "b ? (length == null ? List() : List(length)) : null";
-    }
+  //   // Special casing the `List` default constructor.
+  //   //
+  //   // After a bit of hesitation, we decided to special case `dart.core.List`.
+  //   // The issue is that the default constructor for `List` has a representation
+  //   // which is platform dependent and which is reflected imprecisely by the
+  //   // analyzer model: The analyzer data claims that it is external, and that
+  //   // its optional `length` argument has no default value. But it actually has
+  //   // two different default values, one on the vm and one in dart2js generated
+  //   // code. We handle this special case by ensuring that `length` is passed if
+  //   // it differs from `null`, and otherwise we perform the invocation of the
+  //   // constructor with no arguments; this will suppress the error in the case
+  //   // where the caller specifies an explicit `null` argument, but otherwise
+  //   // faithfully reproduce the behavior of non-reflective code, and that is
+  //   // probably the closest we can get. We could specify a different default
+  //   // argument (say, "Hello, world!") and then test for that value, but that
+  //   // would suppress an error in a very-hard-to-explain case, so that's safer
+  //   // in a sense, but too weird.
+  //   if (constructor.library.isDartCore &&
+  //       constructor.enclosingElement.name == "List" &&
+  //       constructor.name == "") {
+  //     return "(b) => ([length]) => "
+  //         "b ? (length == null ? List() : List(length)) : null";
+  //   }
 
-    String positionals =
-        Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
-            .join(", ");
-    String positionalArguments = Iterable.generate(requiredPositionalCount,
-        (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
+  //   String positionals =
+  //       Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
+  //           .join(", ");
+  //   String positionalArguments = Iterable.generate(requiredPositionalCount,
+  //       (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
 
-    List<String> optionalsWithDefaultList = [];
-    for (int i = 0; i < optionalPositionalCount; i++) {
-      String code = await _extractDefaultValueCode(
-          importCollector, constructor.parameters[requiredPositionalCount + i]);
-      String defaultPart = code.isEmpty ? "" : " = $code";
-      optionalsWithDefaultList
-          .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
-    }
-    String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
+  //   List<String> optionalsWithDefaultList = [];
+  //   for (int i = 0; i < optionalPositionalCount; i++) {
+  //     String code = await _extractDefaultValueCode(
+  //         importCollector, constructor.parameters[requiredPositionalCount + i]);
+  //     String defaultPart = code.isEmpty ? "" : " = $code";
+  //     optionalsWithDefaultList
+  //         .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
+  //   }
+  //   String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
 
-    List<String> namedWithDefaultList = [];
-    for (int i = 0; i < namedParameterNames.length; i++) {
-      // Note that the use of `requiredPositionalCount + i` below relies
-      // on a language design where no parameter list can include
-      // both optional positional and named parameters, so if there are
-      // any named parameters then all optional parameters are named.
-      String code = await _extractDefaultValueCode(
-          importCollector, constructor.parameters[requiredPositionalCount + i]);
-      String defaultPart = code.isEmpty ? "" : " = $code";
-      namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
-    }
-    String namedWithDefaults = namedWithDefaultList.join(", ");
+  //   List<String> namedWithDefaultList = [];
+  //   for (int i = 0; i < namedParameterNames.length; i++) {
+  //     // Note that the use of `requiredPositionalCount + i` below relies
+  //     // on a language design where no parameter list can include
+  //     // both optional positional and named parameters, so if there are
+  //     // any named parameters then all optional parameters are named.
+  //     String code = await _extractDefaultValueCode(
+  //         importCollector, constructor.parameters[requiredPositionalCount + i]);
+  //     String defaultPart = code.isEmpty ? "" : " = $code";
+  //     namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+  //   }
+  //   String namedWithDefaults = namedWithDefaultList.join(", ");
 
-    String optionalArguments = Iterable.generate(optionalPositionalCount,
-        (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
-    // String namedArguments =
-    //     namedParameterNames.map((String name) => "$name: $name").join(", ");
-    String namedArguments = namedParameterNames
-        .map(
-            (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
-        .join(", ");
+  //   String optionalArguments = Iterable.generate(optionalPositionalCount,
+  //       (int i) => parameterNames[i + requiredPositionalCount]).join(", ");
+  //   // String namedArguments =
+  //   //     namedParameterNames.map((String name) => "$name: $name").join(", ");
+  //   String namedArguments = namedParameterNames
+  //       .map(
+  //           (name) => _namedArgumentsCode(name, type.namedParameterTypes[name]))
+  //       .join(", ");
 
-    List<String> parameterParts = <String>[];
-    List<String> argumentParts = <String>[];
+  //   List<String> parameterParts = <String>[];
+  //   List<String> argumentParts = <String>[];
 
-    if (requiredPositionalCount != 0) {
-      parameterParts.add(positionals);
-      argumentParts.add(positionalArguments);
-    }
-    if (optionalPositionalCount != 0) {
-      parameterParts.add("[$optionalsWithDefaults]");
-      argumentParts.add(optionalArguments);
-    }
-    if (namedParameterNames.isNotEmpty) {
-      parameterParts.add("{${namedWithDefaults}}");
-      argumentParts.add(namedArguments);
-    }
+  //   if (requiredPositionalCount != 0) {
+  //     parameterParts.add(positionals);
+  //     argumentParts.add(positionalArguments);
+  //   }
+  //   if (optionalPositionalCount != 0) {
+  //     parameterParts.add("[$optionalsWithDefaults]");
+  //     argumentParts.add(optionalArguments);
+  //   }
+  //   if (namedParameterNames.isNotEmpty) {
+  //     parameterParts.add("{${namedWithDefaults}}");
+  //     argumentParts.add(namedArguments);
+  //   }
 
-    String doRunArgument = "b";
-    while (parameterNames.contains(doRunArgument)) {
-      doRunArgument = doRunArgument + "b";
-    }
+  //   String doRunArgument = "b";
+  //   while (parameterNames.contains(doRunArgument)) {
+  //     doRunArgument = doRunArgument + "b";
+  //   }
 
-    String prefix = importCollector._getPrefix(constructor.library);
-    // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
-    //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
-    //     '(${argumentParts.join(", ")}) : null');
-    return "(${parameterParts.join(', ')}) => ${await _nameOfConstructor(constructor)}(${argumentParts.join(", ")})";
-  }
+  //   String prefix = importCollector._getPrefix(constructor.library);
+  //   // return ('($doRunArgument) => (${parameterParts.join(', ')}) => '
+  //   //     '$doRunArgument ? $prefix${await _nameOfConstructor(constructor)}'
+  //   //     '(${argumentParts.join(", ")}) : null');
+  //   return "(${parameterParts.join(', ')}) => ${await _nameOfConstructor(constructor)}(${argumentParts.join(", ")})";
+  // }
 
   /// The code of the const-construction of this reflector.
   Future<String> _constConstructionCode(
@@ -1658,14 +1662,14 @@ class _ReflectorDomain {
       List<String> mapEntries = [];
       for (ConstructorElement constructor in classDomain._constructors) {
         if (constructor.isFactory || !constructor.enclosingElement.isAbstract) {
-          String code = await _constructorCode(constructor, importCollector);
+          String code = await _methodProxyCode(constructor, importCollector);
           // mapEntries.add('r"${constructor.name}": $code');
           mapEntries.add("\"${constructor.name}\": $code");
         }
       }
       for (ExecutableElement executable in classDomain._staticMembers) {
         if (executable is MethodElementImpl && !executable.isAbstract) {
-          String code = await _staticMethodCode(executable, importCollector);
+          String code = await _methodProxyCode(executable, importCollector);
           mapEntries.add("\"${executable.name}\": $code");
         }
       }
@@ -1674,7 +1678,7 @@ class _ReflectorDomain {
       List<String> methodEntries = [];
       for (MethodElement method in classDomain._declaredMethods) {
         if (!method.isStatic) {
-          String code = await _methodCode(method, importCollector);
+          String code = await _methodProxyCode(method, importCollector);
           methodEntries.add("\"${method.name}\": $code");
         }
       }
@@ -4669,33 +4673,39 @@ int _declarationDescriptor(ExecutableElement element) {
   return result;
 }
 
-Future<String> _nameOfMethod(ExecutableElement element) async {
+Future<String> _proxyNameOfMethod(ExecutableElement element) async {
   String methodName =
       element.isOperator ? "operator ${element.name}" : element.name;
-  String name = "instance.${methodName}";
-  if (_isPrivateName(name)) {
-    await _severe("Cannot access private name $name", element);
+  String name;
+  if (element is ConstructorElement) {
+    name = element.name == ""
+        ? element.enclosingElement.name
+        : "${element.enclosingElement.name}.${element.name}";
+  } else if (element.isStatic) {
+    name = "${element.enclosingElement.name}.${element.name}";
+  } else {
+    name = "instance.${methodName}";
   }
   return name;
 }
 
-Future<String> _nameOfStaticMethod(ExecutableElement element) async {
-  String name = "${element.enclosingElement.name}.${element.name}";
-  if (_isPrivateName(name)) {
-    await _severe("Cannot access private name $name", element);
-  }
-  return name;
-}
+// Future<String> _nameOfStaticMethod(ExecutableElement element) async {
+//   String name = "${element.enclosingElement.name}.${element.name}";
+//   if (_isPrivateName(name)) {
+//     await _severe("Cannot access private name $name", element);
+//   }
+//   return name;
+// }
 
-Future<String> _nameOfConstructor(ConstructorElement element) async {
-  String name = element.name == ""
-      ? element.enclosingElement.name
-      : "${element.enclosingElement.name}.${element.name}";
-  if (_isPrivateName(name)) {
-    await _severe("Cannot access private name $name", element);
-  }
-  return name;
-}
+// Future<String> _nameOfConstructor(ConstructorElement element) async {
+//   String name = element.name == ""
+//       ? element.enclosingElement.name
+//       : "${element.enclosingElement.name}.${element.name}";
+//   if (_isPrivateName(name)) {
+//     await _severe("Cannot access private name $name", element);
+//   }
+//   return name;
+// }
 
 String _formatAsList(String typeName, Iterable parts) =>
     "<${typeName}>[${parts.join(", ")}]";
