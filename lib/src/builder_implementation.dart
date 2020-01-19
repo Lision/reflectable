@@ -1439,6 +1439,30 @@ class _ReflectorDomain {
       _ImportCollector importCollector,
       Map<FunctionType, int> typedefs) async {
     int descriptor = _classDescriptor(classDomain._classElement);
+    List<PropertyAccessorElement> propertyAccessors = [];
+    members.items.forEach((executable) => executable is PropertyAccessorElement
+        ? propertyAccessors.add(executable)
+        : null);
+    List<PropertyAccessorElement> getterAccessor = propertyAccessors
+        .where((propertyAccessor) => propertyAccessor.isGetter)
+        .toList();
+    String getterProxyCode = getterAccessor
+        .where((propertyAccessor) =>
+            propertyAccessor.enclosingElement.displayName ==
+            classDomain._simpleName)
+        .map((propertyAccessor) =>
+            "\"${propertyAccessor.name}\": (instance) => instance.${propertyAccessor.name}")
+        .join(", \n");
+    List<PropertyAccessorElement> setterAccessor = propertyAccessors
+        .where((propertyAccessor) => propertyAccessor.isSetter)
+        .toList();
+    String setterProxyCode = setterAccessor
+        .where((propertyAccessor) =>
+            propertyAccessor.enclosingElement.displayName ==
+            classDomain._simpleName)
+        .map((propertyAccessor) =>
+            "\"${propertyAccessor.displayName}\": (instance, value) => instance.${propertyAccessor.displayName} = value")
+        .join(", \n");
 
     // Fields go first in [memberMirrors], so they will get the
     // same index as in [fields].
@@ -1446,10 +1470,6 @@ class _ReflectorDomain {
         classDomain._declaredFields.map((FieldElement element) {
       return fields.indexOf(element) + fieldsOffset;
     });
-    String fieldProxyCode = classDomain._declaredFields
-        .map((field) =>
-            "\"${field.name}\": (instance) => instance.${field.name}")
-        .join(", ");
 
     // All the elements in the behavioral interface go after the
     // fields in [memberMirrors], so they must get an offset of
@@ -1734,7 +1754,18 @@ class _ReflectorDomain {
 
       Map<String, Function> _getterMap() {
         return {
-          $fieldProxyCode
+          $getterProxyCode
+        };
+      }
+
+      @override
+      MapEntry<String, Map<String, Function>> setterMap() {
+        return MapEntry("${classDomain._simpleName}", _setterMap());
+      }
+
+      Map<String, Function> _setterMap() {
+        return {
+          $setterProxyCode
         };
       }
     }
