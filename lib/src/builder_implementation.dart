@@ -1547,6 +1547,27 @@ class _ReflectorDomain {
       _ImportCollector importCollector,
       Map<FunctionType, int> typedefs) async {
     int descriptor = _classDescriptor(classDomain._classElement);
+    if (classDomain._classElement.isEnum) {
+      String identifierProxyCode = classDomain._declaredFields
+          .toList()
+          .map((field) =>
+              "\"${field.name}\": ${classDomain._simpleName}.${field.name}")
+          .join(", \n");
+      return '''
+      class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+        @override
+        MapEntry<String, Map<String, dynamic>> identifierMap() {
+          return MapEntry("${classDomain._simpleName}", _identifierMap());
+        }
+
+        Map<String, dynamic> _identifierMap() {
+          return {
+            $identifierProxyCode
+          };
+        }
+      }
+      ''';
+    }
 
     // Fields go first in [memberMirrors], so they will get the
     // same index as in [fields].
@@ -1662,7 +1683,7 @@ class _ReflectorDomain {
     List<PropertyAccessorElement> staticAccessor = classDomain._accessors
         .where((propertyAccessor) => propertyAccessor.isStatic)
         .toList();
-    String staticAccessorProxyCode = staticAccessor
+    String identifierProxyCode = staticAccessor
         .map((propertyAccessor) =>
             "\"${propertyAccessor.name}\": ${classDomain._simpleName}.${propertyAccessor.name}")
         .join(", \n");
@@ -1891,7 +1912,7 @@ class _ReflectorDomain {
 
       Map<String, dynamic> _identifierMap() {
         return {
-          $staticAccessorProxyCode
+          $identifierProxyCode
         };
       }
 

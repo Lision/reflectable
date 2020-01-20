@@ -20,247 +20,77 @@ class MyReflectable extends r.Reflectable {
 }
 
 @MyReflectable()
-class Duration implements Comparable<Duration> {
-  static const int microsecondsPerMillisecond = 1000;
-  static const int millisecondsPerSecond = 1000;
-  static const int secondsPerMinute = 60;
-  static const int minutesPerHour = 60;
-  static const int hoursPerDay = 24;
+enum Clip {
+  /// No clip at all.
+  ///
+  /// This is the default option for most widgets: if the content does not
+  /// overflow the widget boundary, don't pay any performance cost for clipping.
+  ///
+  /// If the content does overflow, please explicitly specify the following
+  /// [Clip] options:
+  ///  * [hardEdge], which is the fastest clipping, but with lower fidelity.
+  ///  * [antiAlias], which is a little slower than [hardEdge], but with smoothed edges.
+  ///  * [antiAliasWithSaveLayer], which is much slower than [antiAlias], and should
+  ///    rarely be used.
+  none,
 
-  static const int microsecondsPerSecond =
-      microsecondsPerMillisecond * millisecondsPerSecond;
-  static const int microsecondsPerMinute =
-      microsecondsPerSecond * secondsPerMinute;
-  static const int microsecondsPerHour = microsecondsPerMinute * minutesPerHour;
-  static const int microsecondsPerDay = microsecondsPerHour * hoursPerDay;
+  /// Clip, but do not apply anti-aliasing.
+  ///
+  /// This mode enables clipping, but curves and non-axis-aligned straight lines will be
+  /// jagged as no effort is made to anti-alias.
+  ///
+  /// Faster than other clipping modes, but slower than [none].
+  ///
+  /// This is a reasonable choice when clipping is needed, if the container is an axis-
+  /// aligned rectangle or an axis-aligned rounded rectangle with very small corner radii.
+  ///
+  /// See also:
+  ///
+  ///  * [antiAlias], which is more reasonable when clipping is needed and the shape is not
+  ///    an axis-aligned rectangle.
+  hardEdge,
 
-  static const int millisecondsPerMinute =
-      millisecondsPerSecond * secondsPerMinute;
-  static const int millisecondsPerHour = millisecondsPerMinute * minutesPerHour;
-  static const int millisecondsPerDay = millisecondsPerHour * hoursPerDay;
+  /// Clip with anti-aliasing.
+  ///
+  /// This mode has anti-aliased clipping edges to achieve a smoother look.
+  ///
+  /// It' s much faster than [antiAliasWithSaveLayer], but slower than [hardEdge].
+  ///
+  /// This will be the common case when dealing with circles and arcs.
+  ///
+  /// Different from [hardEdge] and [antiAliasWithSaveLayer], this clipping may have
+  /// bleeding edge artifacts.
+  /// (See https://fiddle.skia.org/c/21cb4c2b2515996b537f36e7819288ae for an example.)
+  ///
+  /// See also:
+  ///
+  ///  * [hardEdge], which is a little faster, but with lower fidelity.
+  ///  * [antiAliasWithSaveLayer], which is much slower, but can avoid the
+  ///    bleeding edges if there's no other way.
+  ///  * [Paint.isAntiAlias], which is the anti-aliasing switch for general draw operations.
+  antiAlias,
 
-  static const int secondsPerHour = secondsPerMinute * minutesPerHour;
-  static const int secondsPerDay = secondsPerHour * hoursPerDay;
-
-  static const int minutesPerDay = minutesPerHour * hoursPerDay;
-
-  static const Duration zero = Duration(seconds: 0);
-
-  /*
-   * The value of this Duration object in microseconds.
-   */
-  final int _duration;
-
-  /**
-   * Creates a new Duration object whose value
-   * is the sum of all individual parts.
-   *
-   * Individual parts can be larger than the next-bigger unit.
-   * For example, [hours] can be greater than 23.
-   *
-   * All individual parts are allowed to be negative.
-   * All arguments are 0 by default.
-   */
-  const Duration(
-      {int days = 0,
-      int hours = 0,
-      int minutes = 0,
-      int seconds = 0,
-      int milliseconds = 0,
-      int microseconds = 0})
-      : this._microseconds(microsecondsPerDay * days +
-            microsecondsPerHour * hours +
-            microsecondsPerMinute * minutes +
-            microsecondsPerSecond * seconds +
-            microsecondsPerMillisecond * milliseconds +
-            microseconds);
-
-  // Fast path internal direct constructor to avoids the optional arguments and
-  // [_microseconds] recomputation.
-  const Duration._microseconds(this._duration);
-
-  /**
-   * Adds this Duration and [other] and
-   * returns the sum as a new Duration object.
-   */
-  Duration operator +(Duration other) {
-    return Duration._microseconds(_duration + other._duration);
-  }
-
-  /**
-   * Subtracts [other] from this Duration and
-   * returns the difference as a new Duration object.
-   */
-  Duration operator -(Duration other) {
-    return Duration._microseconds(_duration - other._duration);
-  }
-
-  /**
-   * Multiplies this Duration by the given [factor] and returns the result
-   * as a new Duration object.
-   *
-   * Note that when [factor] is a double, and the duration is greater than
-   * 53 bits, precision is lost because of double-precision arithmetic.
-   */
-  Duration operator *(num factor) {
-    return Duration._microseconds((_duration * factor).round());
-  }
-
-  /**
-   * Divides this Duration by the given [quotient] and returns the truncated
-   * result as a new Duration object.
-   *
-   * Throws an [IntegerDivisionByZeroException] if [quotient] is `0`.
-   */
-  Duration operator ~/(int quotient) {
-    // By doing the check here instead of relying on "~/" below we get the
-    // exception even with dart2js.
-    if (quotient == 0) throw IntegerDivisionByZeroException();
-    return Duration._microseconds(_duration ~/ quotient);
-  }
-
-  /**
-   * Returns `true` if the value of this Duration
-   * is less than the value of [other].
-   */
-  bool operator <(Duration other) => this._duration < other._duration;
-
-  /**
-   * Returns `true` if the value of this Duration
-   * is greater than the value of [other].
-   */
-  bool operator >(Duration other) => this._duration > other._duration;
-
-  /**
-   * Returns `true` if the value of this Duration
-   * is less than or equal to the value of [other].
-   */
-  bool operator <=(Duration other) => this._duration <= other._duration;
-
-  /**
-   * Returns `true` if the value of this Duration
-   * is greater than or equal to the value of [other].
-   */
-  bool operator >=(Duration other) => this._duration >= other._duration;
-
-  /**
-   * Returns the number of whole days spanned by this Duration.
-   */
-  int get inDays => _duration ~/ Duration.microsecondsPerDay;
-
-  /**
-   * Returns the number of whole hours spanned by this Duration.
-   *
-   * The returned value can be greater than 23.
-   */
-  int get inHours => _duration ~/ Duration.microsecondsPerHour;
-
-  /**
-   * Returns the number of whole minutes spanned by this Duration.
-   *
-   * The returned value can be greater than 59.
-   */
-  int get inMinutes => _duration ~/ Duration.microsecondsPerMinute;
-
-  /**
-   * Returns the number of whole seconds spanned by this Duration.
-   *
-   * The returned value can be greater than 59.
-   */
-  int get inSeconds => _duration ~/ Duration.microsecondsPerSecond;
-
-  /**
-   * Returns number of whole milliseconds spanned by this Duration.
-   *
-   * The returned value can be greater than 999.
-   */
-  int get inMilliseconds => _duration ~/ Duration.microsecondsPerMillisecond;
-
-  /**
-   * Returns number of whole microseconds spanned by this Duration.
-   */
-  int get inMicroseconds => _duration;
-
-  /**
-   * Returns `true` if this [Duration] has the same value as [other].
-   */
-  bool operator ==(dynamic other) =>
-      other is Duration && _duration == other.inMicroseconds;
-
-  int get hashCode => _duration.hashCode;
-
-  /**
-   * Compares this [Duration] to [other], returning zero if the values are equal.
-   *
-   * Returns a negative integer if this `Duration` is shorter than
-   * [other], or a positive integer if it is longer.
-   *
-   * A negative `Duration` is always considered shorter than a positive one.
-   *
-   * It is always the case that `duration1.compareTo(duration2) < 0` iff
-   * `(someDate + duration1).compareTo(someDate + duration2) < 0`.
-   */
-  int compareTo(Duration other) => _duration.compareTo(other._duration);
-
-  /**
-   * Returns a string representation of this `Duration`.
-   *
-   * Returns a string with hours, minutes, seconds, and microseconds, in the
-   * following format: `HH:MM:SS.mmmmmm`. For example,
-   *
-   *     var d = new Duration(days:1, hours:1, minutes:33, microseconds: 500);
-   *     d.toString();  // "25:33:00.000500"
-   */
-  String toString() {
-    String sixDigits(int n) {
-      if (n >= 100000) return "$n";
-      if (n >= 10000) return "0$n";
-      if (n >= 1000) return "00$n";
-      if (n >= 100) return "000$n";
-      if (n >= 10) return "0000$n";
-      return "00000$n";
-    }
-
-    String twoDigits(int n) {
-      if (n >= 10) return "$n";
-      return "0$n";
-    }
-
-    if (inMicroseconds < 0) {
-      return "-${-this}";
-    }
-    String twoDigitMinutes = twoDigits(inMinutes.remainder(minutesPerHour));
-    String twoDigitSeconds = twoDigits(inSeconds.remainder(secondsPerMinute));
-    String sixDigitUs =
-        sixDigits(inMicroseconds.remainder(microsecondsPerSecond));
-    return "$inHours:$twoDigitMinutes:$twoDigitSeconds.$sixDigitUs";
-  }
-
-  /**
-   * Returns whether this `Duration` is negative.
-   *
-   * A negative `Duration` represents the difference from a later time to an
-   * earlier time.
-   */
-  bool get isNegative => _duration < 0;
-
-  /**
-   * Returns a new `Duration` representing the absolute value of this
-   * `Duration`.
-   *
-   * The returned `Duration` has the same length as this one, but is always
-   * positive.
-   */
-  Duration abs() => Duration._microseconds(_duration.abs());
-
-  /**
-   * Returns a new `Duration` representing this `Duration` negated.
-   *
-   * The returned `Duration` has the same length as this one, but will have the
-   * opposite sign of this one.
-   */
-  // Using subtraction helps dart2js avoid negative zeros.
-  Duration operator -() => Duration._microseconds(0 - _duration);
+  /// Clip with anti-aliasing and saveLayer immediately following the clip.
+  ///
+  /// This mode not only clips with anti-aliasing, but also allocates an offscreen
+  /// buffer. All subsequent paints are carried out on that buffer before finally
+  /// being clipped and composited back.
+  ///
+  /// This is very slow. It has no bleeding edge artifacts (that [antiAlias] has)
+  /// but it changes the semantics as an offscreen buffer is now introduced.
+  /// (See https://github.com/flutter/flutter/issues/18057#issuecomment-394197336
+  /// for a difference between paint without saveLayer and paint with saveLayer.)
+  ///
+  /// This will be only rarely needed. One case where you might need this is if
+  /// you have an image overlaid on a very different background color. In these
+  /// cases, consider whether you can avoid overlaying multiple colors in one
+  /// spot (e.g. by having the background color only present where the image is
+  /// absent). If you can, [antiAlias] would be fine and much faster.
+  ///
+  /// See also:
+  ///
+  ///  * [antiAlias], which is much faster, and has similar clipping results.
+  antiAliasWithSaveLayer,
 }
 
 // enter
