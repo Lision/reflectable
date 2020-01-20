@@ -1658,6 +1658,15 @@ class _ReflectorDomain {
     // constructorsCode = _formatAsMap(mapEntries);
     String constructorAndStaticMethodsProxyCode = mapEntries.join(", \n");
 
+    // identifier
+    List<PropertyAccessorElement> staticAccessor = classDomain._accessors
+        .where((propertyAccessor) => propertyAccessor.isStatic)
+        .toList();
+    String staticAccessorProxyCode = staticAccessor
+        .map((propertyAccessor) =>
+            "\"${propertyAccessor.name}\": ${classDomain._simpleName}.${propertyAccessor.name}")
+        .join(", \n");
+
     // getter methods
     List<PropertyAccessorElement> getterAccessor = classDomain._accessors
         .where((propertyAccessor) =>
@@ -1872,6 +1881,17 @@ class _ReflectorDomain {
       Map<String, Function> _typeMethodMap() {
         return {
           $constructorAndStaticMethodsProxyCode
+        };
+      }
+
+      @override
+      MapEntry<String, Map<String, dynamic>> identifierMap() {
+        return MapEntry("${classDomain._simpleName}", _identifierMap());
+      }
+
+      Map<String, dynamic> _identifierMap() {
+        return {
+          $staticAccessorProxyCode
         };
       }
 
