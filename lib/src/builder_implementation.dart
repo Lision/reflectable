@@ -1660,7 +1660,8 @@ class _ReflectorDomain {
 
     // getter methods
     List<PropertyAccessorElement> getterAccessor = classDomain._accessors
-        .where((propertyAccessor) => propertyAccessor.isGetter)
+        .where((propertyAccessor) =>
+            !propertyAccessor.isStatic && propertyAccessor.isGetter)
         .toList();
     String getterProxyCode = getterAccessor
         .map((propertyAccessor) =>
@@ -1669,7 +1670,8 @@ class _ReflectorDomain {
 
     // setter methods
     List<PropertyAccessorElement> setterAccessor = classDomain._accessors
-        .where((propertyAccessor) => propertyAccessor.isSetter)
+        .where((propertyAccessor) =>
+            !propertyAccessor.isStatic && propertyAccessor.isSetter)
         .toList();
     String setterProxyCode = setterAccessor
         .map((propertyAccessor) =>
