@@ -1546,7 +1546,7 @@ class _ReflectorDomain {
       Map<LibraryElement, _LibraryDomain> libraryMap,
       _ImportCollector importCollector,
       Map<FunctionType, int> typedefs) async {
-    int descriptor = _classDescriptor(classDomain._classElement);
+    // int descriptor = _classDescriptor(classDomain._classElement);
     if (classDomain._classElement.isEnum) {
       String identifierProxyCode = classDomain._declaredFields
           .toList()
@@ -1569,96 +1569,86 @@ class _ReflectorDomain {
       ''';
     }
 
-    // Fields go first in [memberMirrors], so they will get the
-    // same index as in [fields].
-    Iterable<int> fieldsIndices =
-        classDomain._declaredFields.map((FieldElement element) {
-      return fields.indexOf(element) + fieldsOffset;
-    });
+    // // Fields go first in [memberMirrors], so they will get the
+    // // same index as in [fields].
+    // Iterable<int> fieldsIndices =
+    //     classDomain._declaredFields.map((FieldElement element) {
+    //   return fields.indexOf(element) + fieldsOffset;
+    // });
 
-    // All the elements in the behavioral interface go after the
-    // fields in [memberMirrors], so they must get an offset of
-    // `fields.length` on the index.
-    Iterable<int> methodsIndices = classDomain._declarations
-        .where(_executableIsntImplicitGetterOrSetter)
-        .map((ExecutableElement element) {
-      // TODO(eernst) implement: The "magic" default constructor in `Object`
-      // (the one that ultimately allocates the memory for _every_ new
-      // object) has no index, which creates the need to catch a `null`
-      // here. Search for "magic" to find other occurrences of the same
-      // issue. For now, we use the index [constants.NO_CAPABILITY_INDEX]
-      // for this declaration, because it is not yet supported.
-      // Need to find the correct solution, though!
-      int index = members.indexOf(element);
-      return index == null
-          ? constants.NO_CAPABILITY_INDEX
-          : index + methodsOffset;
-    });
+    // // All the elements in the behavioral interface go after the
+    // // fields in [memberMirrors], so they must get an offset of
+    // // `fields.length` on the index.
+    // Iterable<int> methodsIndices = classDomain._declarations
+    //     .where(_executableIsntImplicitGetterOrSetter)
+    //     .map((ExecutableElement element) {
+    //   // TODO(eernst) implement: The "magic" default constructor in `Object`
+    //   // (the one that ultimately allocates the memory for _every_ new
+    //   // object) has no index, which creates the need to catch a `null`
+    //   // here. Search for "magic" to find other occurrences of the same
+    //   // issue. For now, we use the index [constants.NO_CAPABILITY_INDEX]
+    //   // for this declaration, because it is not yet supported.
+    //   // Need to find the correct solution, though!
+    //   int index = members.indexOf(element);
+    //   return index == null
+    //       ? constants.NO_CAPABILITY_INDEX
+    //       : index + methodsOffset;
+    // });
 
-    String declarationsCode = _capabilities._impliesDeclarations
-        ? _formatAsConstList("int", () sync* {
-            yield* fieldsIndices;
-            yield* methodsIndices;
-          }())
-        : "const <int>[${constants.NO_CAPABILITY_INDEX}]";
+    // String declarationsCode = _capabilities._impliesDeclarations
+    //     ? _formatAsConstList("int", () sync* {
+    //         yield* fieldsIndices;
+    //         yield* methodsIndices;
+    //       }())
+    //     : "const <int>[${constants.NO_CAPABILITY_INDEX}]";
 
-    // All instance members belong to the behavioral interface, so they
-    // also get an offset of `fields.length`.
-    String instanceMembersCode = "null";
-    if (_capabilities._impliesDeclarations) {
-      instanceMembersCode = _formatAsConstList("int",
-          classDomain._instanceMembers.map((ExecutableElement element) {
-        // TODO(eernst) implement: The "magic" default constructor has
-        // index: NO_CAPABILITY_INDEX; adjust this when support for it has
-        // been implemented.
-        int index = members.indexOf(element);
-        return index == null
-            ? constants.NO_CAPABILITY_INDEX
-            : index + methodsOffset;
-      }));
-    }
+    // // All instance members belong to the behavioral interface, so they
+    // // also get an offset of `fields.length`.
+    // String instanceMembersCode = "null";
+    // if (_capabilities._impliesDeclarations) {
+    //   instanceMembersCode = _formatAsConstList("int",
+    //       classDomain._instanceMembers.map((ExecutableElement element) {
+    //     // TODO(eernst) implement: The "magic" default constructor has
+    //     // index: NO_CAPABILITY_INDEX; adjust this when support for it has
+    //     // been implemented.
+    //     int index = members.indexOf(element);
+    //     return index == null
+    //         ? constants.NO_CAPABILITY_INDEX
+    //         : index + methodsOffset;
+    //   }));
+    // }
 
-    // All static members belong to the behavioral interface, so they
-    // also get an offset of `fields.length`.
-    String staticMembersCode = "null";
-    if (_capabilities._impliesDeclarations) {
-      staticMembersCode = _formatAsConstList("int",
-          classDomain._staticMembers.map((ExecutableElement element) {
-        int index = members.indexOf(element);
-        return index == null
-            ? constants.NO_CAPABILITY_INDEX
-            : index + methodsOffset;
-      }));
-    }
+    // // All static members belong to the behavioral interface, so they
+    // // also get an offset of `fields.length`.
+    // String staticMembersCode = "null";
+    // if (_capabilities._impliesDeclarations) {
+    //   staticMembersCode = _formatAsConstList("int",
+    //       classDomain._staticMembers.map((ExecutableElement element) {
+    //     int index = members.indexOf(element);
+    //     return index == null
+    //         ? constants.NO_CAPABILITY_INDEX
+    //         : index + methodsOffset;
+    //   }));
+    // }
 
-    ClassElement classElement = classDomain._classElement;
-    ClassElement superclass = (await classes).superclassOf(classElement);
+    // ClassElement classElement = classDomain._classElement;
+    // ClassElement superclass = (await classes).superclassOf(classElement);
 
-    String superclassIndex = "${constants.NO_CAPABILITY_INDEX}";
-    if (_capabilities._impliesTypeRelations) {
-      // [Object]'s superclass is reported as `null`: it does not exist and
-      // hence we cannot decide whether it's supported or unsupported.; by
-      // convention we make it supported and report it in the same way as
-      // 'dart:mirrors'. Other superclasses use `NO_CAPABILITY_INDEX` to
-      // indicate missing support.
-      superclassIndex =
-          (classElement is! MixinApplication && classElement.type.isObject)
-              ? "null"
-              : ((await classes).contains(superclass))
-                  ? "${(await classes).indexOf(superclass)}"
-                  : "${constants.NO_CAPABILITY_INDEX}";
-    }
+    // String superclassIndex = "${constants.NO_CAPABILITY_INDEX}";
+    // if (_capabilities._impliesTypeRelations) {
+    //   // [Object]'s superclass is reported as `null`: it does not exist and
+    //   // hence we cannot decide whether it's supported or unsupported.; by
+    //   // convention we make it supported and report it in the same way as
+    //   // 'dart:mirrors'. Other superclasses use `NO_CAPABILITY_INDEX` to
+    //   // indicate missing support.
+    //   superclassIndex =
+    //       (classElement is! MixinApplication && classElement.type.isObject)
+    //           ? "null"
+    //           : ((await classes).contains(superclass))
+    //               ? "${(await classes).indexOf(superclass)}"
+    //               : "${constants.NO_CAPABILITY_INDEX}";
+    // }
 
-    // String constructorAndStaticMethodsProxyCode,
-    //     methodProxyCode,
-    //     getterProxyCode,
-    //     setterProxyCode;
-    // if (classElement is MixinApplication) {
-    //   constructorAndStaticMethodsProxyCode = 'const {}';
-    //   methodProxyCode = '';
-    //   getterProxyCode = '';
-    //   setterProxyCode = '';
-    // } else {
     // constructors
     List<String> mapEntries = [];
     for (ConstructorElement constructor in classDomain._constructors) {
@@ -1708,6 +1698,7 @@ class _ReflectorDomain {
             "\"${propertyAccessor.displayName}\": (instance, value) => instance.${propertyAccessor.displayName} = value")
         .join(", \n");
 
+    // methods
     List<String> methodEntries = [];
     for (MethodElement method in classDomain._declaredMethods) {
       if (!method.isStatic && !method.isOperator) {
@@ -1717,89 +1708,89 @@ class _ReflectorDomain {
     }
     String methodProxyCode = methodEntries.join(", \n");
 
-    String staticGettersCode = "const {}";
-    String staticSettersCode = "const {}";
-    if (classElement is! MixinApplication) {
-      List<String> staticGettersCodeList = [];
-      for (MethodElement method in classDomain._declaredMethods) {
-        if (method.isStatic) {
-          staticGettersCodeList.add(await _staticGettingClosure(
-              importCollector, classElement, method.name));
-        }
-      }
-      for (PropertyAccessorElement accessor in classDomain._accessors) {
-        if (accessor.isStatic && accessor.isGetter) {
-          staticGettersCodeList.add(await _staticGettingClosure(
-              importCollector, classElement, accessor.name));
-        }
-      }
-      staticGettersCode = _formatAsMap(staticGettersCodeList);
-      List<String> staticSettersCodeList = [];
-      for (PropertyAccessorElement accessor in classDomain._accessors) {
-        if (accessor.isStatic && accessor.isSetter) {
-          staticSettersCodeList.add(await _staticSettingClosure(
-              importCollector, classElement, accessor.name));
-        }
-      }
-      staticSettersCode = _formatAsMap(staticSettersCodeList);
-    }
+    // String staticGettersCode = "const {}";
+    // String staticSettersCode = "const {}";
+    // if (classElement is! MixinApplication) {
+    //   List<String> staticGettersCodeList = [];
+    //   for (MethodElement method in classDomain._declaredMethods) {
+    //     if (method.isStatic) {
+    //       staticGettersCodeList.add(await _staticGettingClosure(
+    //           importCollector, classElement, method.name));
+    //     }
+    //   }
+    //   for (PropertyAccessorElement accessor in classDomain._accessors) {
+    //     if (accessor.isStatic && accessor.isGetter) {
+    //       staticGettersCodeList.add(await _staticGettingClosure(
+    //           importCollector, classElement, accessor.name));
+    //     }
+    //   }
+    //   staticGettersCode = _formatAsMap(staticGettersCodeList);
+    //   List<String> staticSettersCodeList = [];
+    //   for (PropertyAccessorElement accessor in classDomain._accessors) {
+    //     if (accessor.isStatic && accessor.isSetter) {
+    //       staticSettersCodeList.add(await _staticSettingClosure(
+    //           importCollector, classElement, accessor.name));
+    //     }
+    //   }
+    //   staticSettersCode = _formatAsMap(staticSettersCodeList);
+    // }
 
-    int mixinIndex = constants.NO_CAPABILITY_INDEX;
-    if (_capabilities._impliesTypeRelations) {
-      mixinIndex = classElement.isMixinApplication
-          // Named mixin application (using the syntax `class B = A with M;`).
-          ? (await classes).indexOf(classElement.mixins.last.element)
-          : (classElement is MixinApplication
-              // Anonymous mixin application.
-              ? (await classes).indexOf(classElement.mixin)
-              // No mixins, by convention we use the class itself.
-              : (await classes).indexOf(classElement));
-      // We may not have support for the given class, in which case we must
-      // correct the `null` from `indexOf` to indicate missing capability.
-      if (mixinIndex == null) mixinIndex = constants.NO_CAPABILITY_INDEX;
-    }
+    // int mixinIndex = constants.NO_CAPABILITY_INDEX;
+    // if (_capabilities._impliesTypeRelations) {
+    //   mixinIndex = classElement.isMixinApplication
+    //       // Named mixin application (using the syntax `class B = A with M;`).
+    //       ? (await classes).indexOf(classElement.mixins.last.element)
+    //       : (classElement is MixinApplication
+    //           // Anonymous mixin application.
+    //           ? (await classes).indexOf(classElement.mixin)
+    //           // No mixins, by convention we use the class itself.
+    //           : (await classes).indexOf(classElement));
+    //   // We may not have support for the given class, in which case we must
+    //   // correct the `null` from `indexOf` to indicate missing capability.
+    //   if (mixinIndex == null) mixinIndex = constants.NO_CAPABILITY_INDEX;
+    // }
 
-    int ownerIndex = _capabilities._supportsLibraries
-        ? libraries.indexOf(libraryMap[classElement.library])
-        : constants.NO_CAPABILITY_INDEX;
+    // int ownerIndex = _capabilities._supportsLibraries
+    //     ? libraries.indexOf(libraryMap[classElement.library])
+    //     : constants.NO_CAPABILITY_INDEX;
 
-    String superinterfaceIndices =
-        "const <int>[${constants.NO_CAPABILITY_INDEX}]";
-    if (_capabilities._impliesTypeRelations) {
-      superinterfaceIndices = _formatAsConstList(
-          'int',
-          classElement.interfaces
-              .map((InterfaceType type) => type.element)
-              .where((await classes).contains)
-              .map((await classes).indexOf));
-    }
+    // String superinterfaceIndices =
+    //     "const <int>[${constants.NO_CAPABILITY_INDEX}]";
+    // if (_capabilities._impliesTypeRelations) {
+    //   superinterfaceIndices = _formatAsConstList(
+    //       'int',
+    //       classElement.interfaces
+    //           .map((InterfaceType type) => type.element)
+    //           .where((await classes).contains)
+    //           .map((await classes).indexOf));
+    // }
 
-    String classMetadataCode;
-    if (_capabilities._supportsMetadata) {
-      classMetadataCode = await _extractMetadataCode(
-          classElement, _resolver, importCollector, _generatedLibraryId);
-    } else {
-      classMetadataCode = "null";
-    }
+    // String classMetadataCode;
+    // if (_capabilities._supportsMetadata) {
+    //   classMetadataCode = await _extractMetadataCode(
+    //       classElement, _resolver, importCollector, _generatedLibraryId);
+    // } else {
+    //   classMetadataCode = "null";
+    // }
 
-    int classIndex = (await classes).indexOf(classElement);
+    // int classIndex = (await classes).indexOf(classElement);
 
-    String parameterListShapesCode = "null";
-    if (_capabilities._impliesParameterListShapes) {
-      Iterable<ExecutableElement> membersList = () sync* {
-        yield* classDomain._instanceMembers;
-        yield* classDomain._staticMembers;
-      }();
-      parameterListShapesCode =
-          _formatAsMap(membersList.map((ExecutableElement element) {
-        ParameterListShape shape = parameterListShapeOf[element];
-        assert(
-            shape != null); // Every method must have its shape in `..shapeOf`.
-        int index = parameterListShapes.indexOf(shape);
-        assert(index != null); // Every shape must be in `..Shapes`.
-        return 'r"${element.name}": $index';
-      }));
-    }
+    // String parameterListShapesCode = "null";
+    // if (_capabilities._impliesParameterListShapes) {
+    //   Iterable<ExecutableElement> membersList = () sync* {
+    //     yield* classDomain._instanceMembers;
+    //     yield* classDomain._staticMembers;
+    //   }();
+    //   parameterListShapesCode =
+    //       _formatAsMap(membersList.map((ExecutableElement element) {
+    //     ParameterListShape shape = parameterListShapeOf[element];
+    //     assert(
+    //         shape != null); // Every method must have its shape in `..shapeOf`.
+    //     int index = parameterListShapes.indexOf(shape);
+    //     assert(index != null); // Every shape must be in `..Shapes`.
+    //     return 'r"${element.name}": $index';
+    //   }));
+    // }
 
     // if (classElement.typeParameters.isEmpty) {
     //   return 'r.NonGenericClassMirrorImpl(r"${classDomain._simpleName}", '
@@ -1884,6 +1875,70 @@ class _ReflectorDomain {
     //       '$parameterListShapesCode, $isCheckCode, '
     //       '$typeParameterIndices, $dynamicReflectedTypeIndex)';
     // }
+
+    // class relation logic
+    ClassElementEnhancedSet clxes = (await classes);
+    ClassElement superClx = clxes.superclassOf(classDomain._classElement);
+    if (superClx.name != "Object") {
+      return '''
+    class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+      @override
+      MapEntry<String, Map<String, Function>> typeMethodMap() {
+        return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
+      }
+
+      Map<String, Function> _typeMethodMap() {
+        return {
+          $constructorAndStaticMethodsProxyCode
+        };
+      }
+
+      @override
+      MapEntry<String, Map<String, dynamic>> identifierMap() {
+        return MapEntry("${classDomain._simpleName}", _identifierMap());
+      }
+
+      Map<String, dynamic> _identifierMap() {
+        return {
+          $identifierProxyCode
+        };
+      }
+
+      @override
+      MapEntry<String, Map<String, Function>> getterMap() {
+        return MapEntry("${classDomain._simpleName}", this._getterMap());
+      }
+
+      Map<String, Function> _getterMap() {
+        Map<String, Function> result = Map.of(Proxy${superClx.name}().getterMap().value);
+        result.addAll({$getterProxyCode});
+        return result;
+      }
+
+      @override
+      MapEntry<String, Map<String, Function>> setterMap() {
+        return MapEntry("${classDomain._simpleName}", _setterMap());
+      }
+
+      Map<String, Function> _setterMap() {
+        Map<String, Function> result = Map.of(Proxy${superClx.name}().setterMap().value);
+        result.addAll({$setterProxyCode});
+        return result;
+      }
+
+      @override
+      MapEntry<String, Map<String, Function>> methodMap() {
+        return MapEntry("${classDomain._simpleName}", _methodMap());
+      }
+
+      Map<String, Function> _methodMap() {
+        Map<String, Function> result = Map.of(Proxy${superClx.name}().methodMap().value);
+        result.addAll({$methodProxyCode});
+        return result;
+      }
+    }
+      ''';
+    }
 
     return '''
     class Proxy${classDomain._simpleName} extends ProxyTypeBase {
