@@ -1708,21 +1708,14 @@ class _ReflectorDomain {
             "\"${propertyAccessor.displayName}\": (instance, value) => instance.${propertyAccessor.displayName} = value")
         .join(", \n");
 
-    // methods
-    String methodProxyCode;
-    if (classDomain._classElement.isAbstract) {
-      methodProxyCode = "";
-    } else {
-      List<String> methodEntries = [];
-      for (MethodElement method in classDomain._declaredMethods) {
-        if (!method.isStatic && !method.isOperator) {
-          String code = await _methodProxyCode(method, importCollector);
-          methodEntries.add("\"${method.name}\": $code");
-        }
+    List<String> methodEntries = [];
+    for (MethodElement method in classDomain._declaredMethods) {
+      if (!method.isStatic && !method.isOperator) {
+        String code = await _methodProxyCode(method, importCollector);
+        methodEntries.add("\"${method.name}\": $code");
       }
-      methodProxyCode = methodEntries.join(", \n");
     }
-    // }
+    String methodProxyCode = methodEntries.join(", \n");
 
     String staticGettersCode = "const {}";
     String staticSettersCode = "const {}";
