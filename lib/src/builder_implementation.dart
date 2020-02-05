@@ -134,22 +134,22 @@ class ReflectionWorld {
   /// needed to enable the correct behavior for all [reflectors].
   Future<String> generateCode() async {
     var typedefs = <FunctionType, int>{};
-    var typeVariablesInScope = Set<String>(); // None at top level.
-    String typedefsCode = "\n";
+    // var typeVariablesInScope = Set<String>(); // None at top level.
+    // String typedefsCode = "\n";
     List<String> reflectorsCode = [];
     for (_ReflectorDomain reflector in reflectors) {
       String reflectorCode =
           await reflector._generateCode(this, importCollector, typedefs);
-      if (typedefs.isNotEmpty) {
-        for (DartType dartType in typedefs.keys) {
-          String body = await reflector._typeCodeOfTypeArgument(
-              dartType, importCollector, typeVariablesInScope, typedefs,
-              useNameOfGenericFunctionType: false);
-          typedefsCode +=
-              "\ntypedef ${_typedefName(typedefs[dartType])} = $body;";
-        }
-        typedefs.clear();
-      }
+      // if (typedefs.isNotEmpty) {
+      //   for (DartType dartType in typedefs.keys) {
+      //     String body = await reflector._typeCodeOfTypeArgument(
+      //         dartType, importCollector, typeVariablesInScope, typedefs,
+      //         useNameOfGenericFunctionType: false);
+      //     typedefsCode +=
+      //         "\ntypedef ${_typedefName(typedefs[dartType])} = $body;";
+      //   }
+      //   typedefs.clear();
+      // }
       // reflectorsCode
       //     .add("${await reflector._constConstructionCode(importCollector)}: "
       //         "$reflectorCode");
@@ -4102,65 +4102,78 @@ class BuilderImplementation {
     /// [metadata].
     Future<Iterable<ClassElement>> getReflectors(
         String qualifiedName, List<ElementAnnotation> metadata) async {
-      List<ClassElement> result = <ClassElement>[];
-
-      for (ElementAnnotationImpl metadatum in metadata) {
-        DartObject value = _getEvaluatedMetadatum(metadatum);
-
-        // Test if the type of this metadata is associated with any reflectors
-        // via GlobalQuantifyMetaCapability.
-        if (value != null) {
-          List<ClassElement> reflectors = globalMetadata[value.type.element];
-          if (reflectors != null) {
-            for (ClassElement reflector in reflectors) {
-              result.add(reflector);
-            }
-          }
-        }
-
-        // Test if the annotation is a reflector.
-        ClassElement reflector =
-            await _getReflectableAnnotation(metadatum, classReflectable);
-        if (reflector != null) result.add(reflector);
-      }
-
-      // Add All reflectors associated with a
-      // pattern, via GlobalQuantifyCapability, that matches the qualified
-      // name of the class or library.
-      globalPatterns.forEach((RegExp pattern, List<ClassElement> reflectors) {
-        if (pattern.hasMatch(qualifiedName)) {
-          for (ClassElement reflector in reflectors) {
-            result.add(reflector);
-          }
-        }
-      });
+      // 直接把 classReflectable 怼进去
+      List<ClassElement> result = <ClassElement>[classReflectable];
       return result;
+
+      // List<ClassElement> result = <ClassElement>[];
+
+      // for (ElementAnnotationImpl metadatum in metadata) {
+      //   DartObject value = _getEvaluatedMetadatum(metadatum);
+
+      //   // Test if the type of this metadata is associated with any reflectors
+      //   // via GlobalQuantifyMetaCapability.
+      //   if (value != null) {
+      //     List<ClassElement> reflectors = globalMetadata[value.type.element];
+      //     if (reflectors != null) {
+      //       for (ClassElement reflector in reflectors) {
+      //         result.add(reflector);
+      //       }
+      //     }
+      //   }
+
+      //   // Test if the annotation is a reflector.
+      //   ClassElement reflector =
+      //       await _getReflectableAnnotation(metadatum, classReflectable);
+      //   if (reflector != null) result.add(reflector);
+      // }
+
+      // // Add All reflectors associated with a
+      // // pattern, via GlobalQuantifyCapability, that matches the qualified
+      // // name of the class or library.
+      // globalPatterns.forEach((RegExp pattern, List<ClassElement> reflectors) {
+      //   if (pattern.hasMatch(qualifiedName)) {
+      //     for (ClassElement reflector in reflectors) {
+      //       result.add(reflector);
+      //     }
+      //   }
+      // });
+      // return result;
     }
 
     // Populate [globalPatterns] and [globalMetadata].
     await _findGlobalQuantifyAnnotations(globalPatterns, globalMetadata);
 
-    // Visits all libraries and all classes in the given entry point,
-    // gets their reflectors, and adds them to the domain of that
-    // reflector.
+    // 免插桩（这里指免去插入 @Reflector Annotation）分析逻辑
     for (LibraryElement library in _libraries) {
+      // 过滤 dart 以及 reflectable 开头的 library
+      if (library.name.startsWith("dart") ||
+          library.name.startsWith("reflectable")) {
+        continue;
+      }
+
+      // 引入 library，用于判断 owner 等逻辑，暂时不用管
       for (ClassElement reflector
           in await getReflectors(library.name, library.metadata)) {
         assert(await _isImportableLibrary(library, dataId, _resolver));
         await addLibrary(library, reflector);
       }
 
+      // 深入分析源文件的汇编单元
       for (CompilationUnitElement unit in library.units) {
+        // 类
         for (ClassElement type in unit.types) {
           for (ClassElement reflector
               in await getReflectors(_qualifiedName(type), type.metadata)) {
             await addClassDomain(type, reflector);
           }
-          if (!allReflectors.contains(type) &&
-              await _isReflectorClass(type, classReflectable)) {
-            allReflectors.add(type);
-          }
+          // 去掉递归反射判断
+          // if (!allReflectors.contains(type) &&
+          //     await _isReflectorClass(type, classReflectable)) {
+          //   allReflectors.add(type);
+          // }
         }
+        // 枚举
         for (ClassElement type in unit.enums) {
           for (ClassElement reflector
               in await getReflectors(_qualifiedName(type), type.metadata)) {
@@ -4168,17 +4181,58 @@ class BuilderImplementation {
           }
           // An enum is never a reflector class, hence no `_isReflectorClass`.
         }
-        for (FunctionElement function in unit.functions) {
-          for (ClassElement reflector in await getReflectors(
-              _qualifiedFunctionName(function), function.metadata)) {
-            // We just add the library here, the function itself will be
-            // supported using `invoke` and `declarations` of that library
-            // mirror.
-            await addLibrary(library, reflector);
-          }
-        }
+        // // 函数，目前用不到，暂时不用管
+        // for (FunctionElement function in unit.functions) {
+        //   for (ClassElement reflector in await getReflectors(
+        //       _qualifiedFunctionName(function), function.metadata)) {
+        //     // We just add the library here, the function itself will be
+        //     // supported using `invoke` and `declarations` of that library
+        //     // mirror.
+        //     await addLibrary(library, reflector);
+        //   }
+        // }
       }
     }
+
+    // // Visits all libraries and all classes in the given entry point,
+    // // gets their reflectors, and adds them to the domain of that
+    // // reflector.
+    // for (LibraryElement library in _libraries) {
+    //   for (ClassElement reflector
+    //       in await getReflectors(library.name, library.metadata)) {
+    //     assert(await _isImportableLibrary(library, dataId, _resolver));
+    //     await addLibrary(library, reflector);
+    //   }
+
+    //   for (CompilationUnitElement unit in library.units) {
+    //     for (ClassElement type in unit.types) {
+    //       for (ClassElement reflector
+    //           in await getReflectors(_qualifiedName(type), type.metadata)) {
+    //         await addClassDomain(type, reflector);
+    //       }
+    //       if (!allReflectors.contains(type) &&
+    //           await _isReflectorClass(type, classReflectable)) {
+    //         allReflectors.add(type);
+    //       }
+    //     }
+    //     for (ClassElement type in unit.enums) {
+    //       for (ClassElement reflector
+    //           in await getReflectors(_qualifiedName(type), type.metadata)) {
+    //         await addClassDomain(type, reflector);
+    //       }
+    //       // An enum is never a reflector class, hence no `_isReflectorClass`.
+    //     }
+    //     for (FunctionElement function in unit.functions) {
+    //       for (ClassElement reflector in await getReflectors(
+    //           _qualifiedFunctionName(function), function.metadata)) {
+    //         // We just add the library here, the function itself will be
+    //         // supported using `invoke` and `declarations` of that library
+    //         // mirror.
+    //         await addLibrary(library, reflector);
+    //       }
+    //     }
+    //   }
+    // }
 
     Set<ClassElement> usedReflectors = Set<ClassElement>();
     for (_ReflectorDomain domain in domains.values) {
@@ -4466,18 +4520,18 @@ class BuilderImplementation {
     // imports because generating the code can add further imports.
     String code = await world.generateCode();
     print(code);
-    List<String> imports = <String>[];
-    for (LibraryElement library in world.importCollector._libraries) {
-      Uri uri = library == world.entryPointLibrary
-          ? Uri.parse(originalEntryPointFilename)
-          : await _getImportUri(library, generatedLibraryId);
-      String prefix = world.importCollector._getPrefix(library);
-      if (prefix.isNotEmpty) {
-        imports
-            .add("import '$uri' as ${prefix.substring(0, prefix.length - 1)};");
-      }
-    }
-    imports.sort();
+    // List<String> imports = <String>[];
+    // for (LibraryElement library in world.importCollector._libraries) {
+    //   Uri uri = library == world.entryPointLibrary
+    //       ? Uri.parse(originalEntryPointFilename)
+    //       : await _getImportUri(library, generatedLibraryId);
+    //   String prefix = world.importCollector._getPrefix(library);
+    //   if (prefix.isNotEmpty) {
+    //     imports
+    //         .add("import '$uri' as ${prefix.substring(0, prefix.length - 1)};");
+    //   }
+    // }
+    // imports.sort();
 
 //     String result = """
 // // This file has been generated by the reflectable package.
@@ -4567,27 +4621,27 @@ $code
         }
         return "// No output from reflectable, stopped with error.";
       } else {
-        if (inputLibrary.entryPoint == null) {
-          log.info("Entry point: $inputId has no `main`. Skipping.");
-          if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
-            _processedEntryPointCount++;
-          }
-          return "// No output from reflectable, there is no `main`.";
-        } else {
-          String outputContents = await _generateNewEntryPoint(
-              world, generatedLibraryId, path.basename(inputId.path));
-          if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
-            _processedEntryPointCount++;
-          }
-          if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
-            if (_processedEntryPointCount ==
-                const int.fromEnvironment("reflectable.pause.at.exit.count")) {
-              print("Build complete, pausing at exit.");
-              developer.debugger();
-            }
-          }
-          return outputContents;
+        // if (inputLibrary.entryPoint == null) {
+        //   log.info("Entry point: $inputId has no `main`. Skipping.");
+        //   if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
+        //     _processedEntryPointCount++;
+        //   }
+        //   return "// No output from reflectable, there is no `main`.";
+        // } else {
+        String outputContents = await _generateNewEntryPoint(
+            world, generatedLibraryId, path.basename(inputId.path));
+        if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
+          _processedEntryPointCount++;
         }
+        if (const bool.fromEnvironment("reflectable.pause.at.exit")) {
+          if (_processedEntryPointCount ==
+              const int.fromEnvironment("reflectable.pause.at.exit.count")) {
+            print("Build complete, pausing at exit.");
+            developer.debugger();
+          }
+        }
+        return outputContents;
+        // }
       }
     }
   }

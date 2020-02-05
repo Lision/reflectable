@@ -4,6 +4,7 @@
 
 // Tests some basic functionality of instance mirrors and class mirrors.
 
+@MyReflectable()
 library test_reflectable.test.basic_test;
 
 import 'package:reflectable/reflectable.dart' as r;
@@ -85,7 +86,7 @@ abstract class Widget extends DiagnosticableTree {
   }
 }
 
-@MyReflectable()
+// @MyReflectable()
 abstract class StatelessWidget extends Widget {
   /// Initializes [key] for subclasses.
   const StatelessWidget({Key key}) : super(key: key);
