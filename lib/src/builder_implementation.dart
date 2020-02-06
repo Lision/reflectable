@@ -26,6 +26,7 @@ import 'fixed_point.dart';
 import 'incompleteness.dart';
 import 'reflectable_class_constants.dart' as reflectable_class_constants;
 import 'reflectable_errors.dart' as errors;
+import '../extra/reflectable_include_parser.dart';
 
 /// Specifiers for warnings that may be suppressed; `allWarnings` disables all
 /// warnings, and the remaining values are concerned with individual warnings.
@@ -1243,114 +1244,114 @@ class _ReflectorDomain {
     // String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
     String classMirrorsCode = typeMirrorsList.join("\n");
 
-    // Generate code for creation of getter and setter closures.
-    String gettersCode = _formatAsMap(instanceGetterNames.map(_gettingClosure));
-    String settersCode = _formatAsMap(instanceSetterNames.map(_settingClosure));
+    // // Generate code for creation of getter and setter closures.
+    // String gettersCode = _formatAsMap(instanceGetterNames.map(_gettingClosure));
+    // String settersCode = _formatAsMap(instanceSetterNames.map(_settingClosure));
 
-    bool reflectedTypeRequested = _capabilities._impliesReflectedType;
+    // bool reflectedTypeRequested = _capabilities._impliesReflectedType;
 
-    // Generate code for creation of member mirrors.
-    List<String> topLevelVariablesList = [];
-    for (TopLevelVariableElement element in topLevelVariables.items) {
-      topLevelVariablesList.add(await _topLevelVariableMirrorCode(
-          element,
-          reflectedTypes,
-          reflectedTypesOffset,
-          importCollector,
-          typedefs,
-          reflectedTypeRequested));
-    }
-    List<String> fieldsList = [];
-    for (FieldElement element in fields.items) {
-      fieldsList.add(await _fieldMirrorCode(
-          element,
-          reflectedTypes,
-          reflectedTypesOffset,
-          importCollector,
-          typedefs,
-          reflectedTypeRequested));
-    }
-    String membersCode = "null";
-    if (_capabilities._impliesDeclarations) {
-      List<String> methodsList = [];
-      for (ExecutableElement executableElement in members.items) {
-        methodsList.add(await _methodMirrorCode(
-            executableElement,
-            topLevelVariables,
-            fields,
-            members,
-            reflectedTypes,
-            reflectedTypesOffset,
-            parameters,
-            importCollector,
-            typedefs,
-            reflectedTypeRequested));
-      }
-      Iterable<String> membersList = () sync* {
-        yield* topLevelVariablesList;
-        yield* fieldsList;
-        yield* methodsList;
-      }();
-      membersCode = _formatAsList("m.DeclarationMirror", membersList);
-    }
+    // // Generate code for creation of member mirrors.
+    // List<String> topLevelVariablesList = [];
+    // for (TopLevelVariableElement element in topLevelVariables.items) {
+    //   topLevelVariablesList.add(await _topLevelVariableMirrorCode(
+    //       element,
+    //       reflectedTypes,
+    //       reflectedTypesOffset,
+    //       importCollector,
+    //       typedefs,
+    //       reflectedTypeRequested));
+    // }
+    // List<String> fieldsList = [];
+    // for (FieldElement element in fields.items) {
+    //   fieldsList.add(await _fieldMirrorCode(
+    //       element,
+    //       reflectedTypes,
+    //       reflectedTypesOffset,
+    //       importCollector,
+    //       typedefs,
+    //       reflectedTypeRequested));
+    // }
+    // String membersCode = "null";
+    // if (_capabilities._impliesDeclarations) {
+    //   List<String> methodsList = [];
+    //   for (ExecutableElement executableElement in members.items) {
+    //     methodsList.add(await _methodMirrorCode(
+    //         executableElement,
+    //         topLevelVariables,
+    //         fields,
+    //         members,
+    //         reflectedTypes,
+    //         reflectedTypesOffset,
+    //         parameters,
+    //         importCollector,
+    //         typedefs,
+    //         reflectedTypeRequested));
+    //   }
+    //   Iterable<String> membersList = () sync* {
+    //     yield* topLevelVariablesList;
+    //     yield* fieldsList;
+    //     yield* methodsList;
+    //   }();
+    //   membersCode = _formatAsList("m.DeclarationMirror", membersList);
+    // }
 
-    // Generate code for creation of parameter mirrors.
-    String parameterMirrorsCode = "null";
-    if (_capabilities._impliesDeclarations) {
-      List<String> parametersList = [];
-      for (ParameterElement element in parameters.items) {
-        parametersList.add(await _parameterMirrorCode(
-            element,
-            fields,
-            members,
-            reflectedTypes,
-            reflectedTypesOffset,
-            importCollector,
-            typedefs,
-            reflectedTypeRequested));
-      }
-      parameterMirrorsCode = _formatAsList("m.ParameterMirror", parametersList);
-    }
+    // // Generate code for creation of parameter mirrors.
+    // String parameterMirrorsCode = "null";
+    // if (_capabilities._impliesDeclarations) {
+    //   List<String> parametersList = [];
+    //   for (ParameterElement element in parameters.items) {
+    //     parametersList.add(await _parameterMirrorCode(
+    //         element,
+    //         fields,
+    //         members,
+    //         reflectedTypes,
+    //         reflectedTypesOffset,
+    //         importCollector,
+    //         typedefs,
+    //         reflectedTypeRequested));
+    //   }
+    //   parameterMirrorsCode = _formatAsList("m.ParameterMirror", parametersList);
+    // }
 
-    // Generate code for listing [Type] instances.
-    List<String> typesCodeList = [];
-    for (ClassElement classElement in await classes) {
-      typesCodeList.add(_dynamicTypeCodeOfClass(classElement, importCollector));
-    }
-    for (ErasableDartType erasableDartType in reflectedTypes.items) {
-      if (erasableDartType.erased) {
-        typesCodeList.add(_dynamicTypeCodeOfClass(
-            erasableDartType.dartType.element, importCollector));
-      } else {
-        typesCodeList.add(await _typeCodeOfClass(
-            erasableDartType.dartType, importCollector, typedefs));
-      }
-    }
-    String typesCode = _formatAsList("Type", typesCodeList);
+    // // Generate code for listing [Type] instances.
+    // List<String> typesCodeList = [];
+    // for (ClassElement classElement in await classes) {
+    //   typesCodeList.add(_dynamicTypeCodeOfClass(classElement, importCollector));
+    // }
+    // for (ErasableDartType erasableDartType in reflectedTypes.items) {
+    //   if (erasableDartType.erased) {
+    //     typesCodeList.add(_dynamicTypeCodeOfClass(
+    //         erasableDartType.dartType.element, importCollector));
+    //   } else {
+    //     typesCodeList.add(await _typeCodeOfClass(
+    //         erasableDartType.dartType, importCollector, typedefs));
+    //   }
+    // }
+    // String typesCode = _formatAsList("Type", typesCodeList);
 
-    // Generate code for creation of library mirrors.
-    String librariesCode;
-    if (!_capabilities._supportsLibraries) {
-      librariesCode = "null";
-    } else {
-      List<String> librariesCodeList = [];
-      for (_LibraryDomain library in libraries.items) {
-        librariesCodeList.add(await _libraryMirrorCode(
-            library,
-            libraries.indexOf(library),
-            members,
-            parameterListShapes,
-            parameterListShapeOf,
-            topLevelVariables,
-            methodsOffset,
-            importCollector));
-      }
-      librariesCode = _formatAsList("m.LibraryMirror", librariesCodeList);
-    }
+    // // Generate code for creation of library mirrors.
+    // String librariesCode;
+    // if (!_capabilities._supportsLibraries) {
+    //   librariesCode = "null";
+    // } else {
+    //   List<String> librariesCodeList = [];
+    //   for (_LibraryDomain library in libraries.items) {
+    //     librariesCodeList.add(await _libraryMirrorCode(
+    //         library,
+    //         libraries.indexOf(library),
+    //         members,
+    //         parameterListShapes,
+    //         parameterListShapeOf,
+    //         topLevelVariables,
+    //         methodsOffset,
+    //         importCollector));
+    //   }
+    //   librariesCode = _formatAsList("m.LibraryMirror", librariesCodeList);
+    // }
 
-    String parameterListShapesCode = _formatAsDynamicList(parameterListShapes
-        .items
-        .map((ParameterListShape shape) => shape.code));
+    // String parameterListShapesCode = _formatAsDynamicList(parameterListShapes
+    //     .items
+    //     .map((ParameterListShape shape) => shape.code));
 
     // return "r.ReflectorData($classMirrorsCode, $membersCode, "
     //     "$parameterMirrorsCode, $typesCode, $reflectedTypesOffset, "
@@ -1674,6 +1675,7 @@ class _ReflectorDomain {
         .where((propertyAccessor) => propertyAccessor.isStatic)
         .toList();
     String identifierProxyCode = staticAccessor
+        .where((propertyAccessor) => !propertyAccessor.isSetter)
         .map((propertyAccessor) =>
             "\"${propertyAccessor.name}\": ${classDomain._simpleName}.${propertyAccessor.name}")
         .join(", \n");
@@ -4032,8 +4034,16 @@ class BuilderImplementation {
       var domain = domains[reflector];
       if (domain == null) {
         LibraryElement reflectorLibrary = reflector.library;
-        _Capabilities capabilities =
-            await _capabilitiesOf(capabilityLibrary, reflector);
+        // 不从 reflector 获取权限
+        // _Capabilities capabilities =
+        //     await _capabilitiesOf(capabilityLibrary, reflector);
+        // 手写所需权限
+        _Capabilities capabilities = _Capabilities(<ec.ReflectCapability>[
+          ec.staticInvokeCapability,
+          ec.instanceInvokeCapability,
+          ec.newInstanceCapability,
+          ec.declarationsCapability
+        ]);
         assert(await _isImportableLibrary(reflectorLibrary, dataId, _resolver));
         importCollector._addLibrary(reflectorLibrary);
         domain = _ReflectorDomain(_resolver, dataId, reflector, capabilities);
@@ -4588,7 +4598,12 @@ $code
 
     // The [_resolver] provides all the static information.
     _resolver = resolver;
-    _libraries = visibleLibraries;
+    // 免引入 reflectable libraries 逻辑
+    List<LibraryElement> reflibs =
+        await ReflectableIncludeParser.parseReflectableLibrary();
+    List<LibraryElement> temp = List.of(visibleLibraries);
+    reflibs.forEach((lib) => temp.add(lib));
+    _libraries = temp;
 
     for (LibraryElement library in _libraries) {
       if (library.name != null) _librariesByName[library.name] = library;
