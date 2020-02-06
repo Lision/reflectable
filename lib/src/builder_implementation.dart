@@ -1219,6 +1219,11 @@ class _ReflectorDomain {
     List<String> typeMirrorsList = [];
     if (_capabilities._impliesTypes || _capabilities._impliesInstanceInvoke) {
       for (_ClassDomain classDomain in (await classes).domains) {
+        // 过滤掉私有目标
+        if (classDomain._simpleName.startsWith("_")) {
+          continue;
+        }
+
         typeMirrorsList.add(await _classMirrorCode(
             classDomain,
             typeParameters,
