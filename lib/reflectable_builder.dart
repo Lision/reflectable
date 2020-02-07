@@ -21,7 +21,7 @@ class ReflectableBuilder implements Builder {
     var inputLibrary = await buildStep.inputLibrary;
     var resolver = buildStep.resolver;
     var inputId = buildStep.inputId;
-    var outputId = inputId.changeExtension('.reflectable.dart');
+    var outputId = inputId.changeExtension('_proxy.dart');
     List<LibraryElement> visibleLibraries = await resolver.libraries.toList();
     var generatedSource = await BuilderImplementation().buildMirrorLibrary(
         resolver, inputId, outputId, inputLibrary, visibleLibraries, true, []);
@@ -29,7 +29,7 @@ class ReflectableBuilder implements Builder {
   }
 
   Map<String, List<String>> get buildExtensions => const {
-        '.dart': ['.reflectable.dart']
+        '.dart': ['_proxy.dart']
       };
 }
 
