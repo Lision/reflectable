@@ -579,6 +579,17 @@ int typedefNumber = 1;
 /// Information about the program parts that can be reflected by a given
 /// Reflector.
 class _ReflectorDomain {
+  // 需要单独怼的私有类
+  Set<ClassElement> _privateClasses;
+
+  Set<ClassElement> get privateClasses {
+    if (_privateClasses == null) {
+      _privateClasses = {};
+    }
+    return _privateClasses;
+  }
+
+  // 原有属性
   ReflectionWorld _world; // Non-final due to cycle, do not modify.
   final Resolver _resolver;
   final AssetId _generatedLibraryId;
@@ -2715,12 +2726,14 @@ class _ReflectorDomain {
     if (parameterNode is DefaultFormalParameter &&
         parameterNode.defaultValue != null) {
       return await _extractConstantCode(parameterNode.defaultValue,
-          importCollector, _generatedLibraryId, _resolver);
+          importCollector, _generatedLibraryId, _resolver,
+          reflectorDomain: this);
     } else if (parameterElement is DefaultFieldFormalParameterElementImpl) {
       Expression defaultValue = parameterElement.constantInitializer;
       if (defaultValue != null) {
         return await _extractConstantCode(
-            defaultValue, importCollector, _generatedLibraryId, _resolver);
+            defaultValue, importCollector, _generatedLibraryId, _resolver,
+            reflectorDomain: this);
       }
     }
     return "";
@@ -4898,7 +4911,8 @@ Future<String> _extractConstantCode(
     Expression expression,
     _ImportCollector importCollector,
     AssetId generatedLibraryId,
-    Resolver resolver) async {
+    Resolver resolver,
+    {_ReflectorDomain reflectorDomain}) async {
   String typeAnnotationHelper(TypeAnnotation typeName) {
     LibraryElement library = typeName.type.element.library;
     if (library == null) {
@@ -4909,207 +4923,238 @@ Future<String> _extractConstantCode(
   }
 
   Future<String> helper(Expression expression) async {
-    return "${expression.toString()}";
-
-    if (expression is ListLiteral) {
-      List<String> elements = [];
-      for (CollectionElement collectionElement in expression.elements) {
-        if (collectionElement is Expression) {
-          Expression subExpression = collectionElement;
-          elements.add(await helper(subExpression));
-        } else {
-          // TODO(eernst) implement: `if` and `spread` elements of list.
-          await _severe("Not yet supported! "
-              "Encountered list literal element which is not an expression: "
-              "$collectionElement");
-          elements.add("");
-        }
-      }
-      if (expression.typeArguments == null ||
-          expression.typeArguments.arguments.isEmpty) {
-        return "const ${_formatAsDynamicList(elements)}";
-      } else {
-        assert(expression.typeArguments.arguments.length == 1);
-        // String typeArgument =
-        // typeAnnotationHelper(expression.typeArguments.arguments[0]);
-        // return "const <$typeArgument>${_formatAsDynamicList(elements)}";
+    if (expression is InstanceCreationExpression &&
+        expression.staticType.element is ClassElementImpl) {
+      // 私有类初始化当默认值，这...我太难了
+      if (!_isPrivateName(expression.staticType.element.name)) {
+        // 不是私有类，放行
         return "${expression.toString()}";
       }
-    } else if (expression is SetOrMapLiteral) {
-      if (expression.isMap) {
-        List<String> elements = [];
-        for (CollectionElement collectionElement in expression.elements) {
-          if (collectionElement is MapLiteralEntry) {
-            String key = await helper(collectionElement.key);
-            String value = await helper(collectionElement.value);
-            elements.add("$key: $value");
-          } else {
-            // TODO(eernst) implement: `if` and `spread` elements of a map.
-            await _severe("Not yet supported! "
-                "Encountered map literal element which is not a map entry: "
-                "$collectionElement");
-            elements.add("");
-          }
-        }
-        if (expression.typeArguments == null ||
-            expression.typeArguments.arguments.isEmpty) {
-          return "const ${_formatAsMap(elements)}";
-        } else {
-          assert(expression.typeArguments.arguments.length == 2);
-          // String keyType =
-          //     typeAnnotationHelper(expression.typeArguments.arguments[0]);
-          // String valueType =
-          //     typeAnnotationHelper(expression.typeArguments.arguments[1]);
-          // return "const <$keyType, $valueType>${_formatAsMap(elements)}";
-          return "${expression.toString()}";
-        }
-      } else if (expression.isSet) {
-        List<String> elements = [];
-        for (CollectionElement collectionElement in expression.elements) {
-          if (collectionElement is Expression) {
-            Expression subExpression = collectionElement;
-            elements.add(await helper(subExpression));
-          } else {
-            // TODO(eernst) implement: `if` and `spread` elements of a set.
-            await _severe("Not yet supported! "
-                "Encountered set literal element which is not an expression: "
-                "$collectionElement");
-            elements.add("");
-          }
-        }
-        if (expression.typeArguments == null ||
-            expression.typeArguments.arguments.isEmpty) {
-          return "const ${_formatAsDynamicSet(elements)}";
-        } else {
-          assert(expression.typeArguments.arguments.length == 1);
-          // String typeArgument =
-          // typeAnnotationHelper(expression.typeArguments.arguments[0]);
-          // return "const <$typeArgument>${_formatAsDynamicSet(elements)}";
-          return "${expression.toString()}";
-        }
-      } else {
-        unreachableError("SetOrMapLiteral is neither a set nor a map");
+
+      if (expression.argumentList.arguments.isNotEmpty) {
+        // 私有类还有参数，这个后期来用递归梭哈，当前暂不支持（因为目前没遇到）
+        await _severe("暂不支持私有类默认值构造函数加参数:$expression");
         return "";
       }
-    } else if (expression is InstanceCreationExpression) {
-      String constructor = expression.constructorName.toSource();
-      if (_isPrivateName(constructor)) {
-        await _severe("Cannot access private name $constructor, "
-            "needed for expression $expression");
+
+      ClassElementEnhancedSet clxes = await reflectorDomain?.classes;
+      if (!clxes.contains(expression.staticType.element)) {
+        // 不能导入表示无法解释的私有类
+        await _severe("不能导入表示无法解释改私有类:$expression");
         return "";
       }
-      LibraryElement libraryOfConstructor = expression.staticElement.library;
-      if (await _isImportableLibrary(
-          libraryOfConstructor, generatedLibraryId, resolver)) {
-        importCollector._addLibrary(libraryOfConstructor);
-        String prefix = importCollector._getPrefix(libraryOfConstructor);
-        // TODO(sigurdm) implement: Named arguments.
-        List<String> argumentList = [];
-        for (Expression argument in expression.argumentList.arguments) {
-          argumentList.add(await helper(argument));
-        }
-        String arguments = argumentList.join(", ");
-        // TODO(sigurdm) feature: Type arguments.
-        if (_isPrivateName(constructor)) {
-          await _severe("Cannot access private name $constructor, "
-              "needed for expression $expression");
-          return "";
-        }
-        return "const $prefix$constructor($arguments)";
-      } else {
-        await _severe("Cannot access library $libraryOfConstructor, "
-            "needed for expression $expression");
-        return "";
-      }
-    } else if (expression is Identifier) {
-      if (Identifier.isPrivateName(expression.name)) {
-        Element staticElement = expression.staticElement;
-        if (staticElement is PropertyAccessorElement) {
-          VariableElement variable = staticElement.variable;
-          var resolvedLibrary = await variable.session
-              .getResolvedLibraryByElement(variable.library);
-          var declaration = resolvedLibrary.getElementDeclaration(variable);
-          if (declaration == null || declaration.node == null) {
-            await _severe("Cannot handle private identifier $expression");
-            return "";
-          }
-          VariableDeclaration variableDeclaration = declaration.node;
-          return await helper(variableDeclaration.initializer);
-        } else {
-          await _severe("Cannot handle private identifier $expression");
-          return "";
-        }
-      } else {
-        Element element = expression.staticElement;
-        if (element == null) {
-          // TODO(eernst): This can occur; but how could `expression` be
-          // unresolved? Issue 173.
-          await _fine("Encountered unresolved identifier $expression"
-              " in constant; using null");
-          // return "null";
-          return "${expression.name}";
-        } else if (element.library == null) {
-          return "${element.name}";
-        } else if (await _isImportableLibrary(
-            element.library, generatedLibraryId, resolver)) {
-          importCollector._addLibrary(element.library);
-          String prefix = importCollector._getPrefix(element.library);
-          Element enclosingElement = element.enclosingElement;
-          if (enclosingElement is ClassElement) {
-            prefix += "${enclosingElement.name}.";
-          }
-          if (_isPrivateName(element.name)) {
-            await _severe("Cannot access private name ${element.name}, "
-                "needed for expression $expression");
-          }
-          return "$prefix${element.name}";
-        } else {
-          await _severe("Cannot access library ${element.library}, "
-              "needed for expression $expression");
-          return "";
-        }
-      }
-    } else if (expression is BinaryExpression) {
-      String a = await helper(expression.leftOperand);
-      String op = expression.operator.lexeme;
-      String b = await helper(expression.rightOperand);
-      return "$a $op $b";
-    } else if (expression is ConditionalExpression) {
-      String condition = await helper(expression.condition);
-      String a = await helper(expression.thenExpression);
-      String b = await helper(expression.elseExpression);
-      return "$condition ? $a : $b";
-    } else if (expression is ParenthesizedExpression) {
-      String nested = await helper(expression.expression);
-      return "($nested)";
-    } else if (expression is PropertyAccess) {
-      String target = await helper(expression.target);
-      String selector = expression.propertyName.token.lexeme;
-      return "$target.$selector";
-    } else if (expression is MethodInvocation) {
-      // We only handle "identical(a, b)".
-      // assert(expression.target == null);
-      // assert(expression.methodName.token.lexeme == "identical");
-      // var arguments = expression.argumentList.arguments;
-      // assert(arguments.length == 2);
-      // String a = await helper(arguments[0]);
-      // String b = await helper(arguments[1]);
-      // return "identical($a, $b)";
-      return "${expression.toString()}";
-    } else if (expression is NamedExpression) {
-      String value = await _extractConstantCode(
-          expression.expression, importCollector, generatedLibraryId, resolver);
-      return "${expression.name} $value";
-    } else {
-      assert(expression is IntegerLiteral ||
-          expression is BooleanLiteral ||
-          expression is StringLiteral ||
-          expression is NullLiteral ||
-          expression is SymbolLiteral ||
-          expression is DoubleLiteral ||
-          expression is TypedLiteral);
-      return expression.toSource();
+
+      reflectorDomain.privateClasses.add(expression.staticType.element);
+      String constructor = expression.constructorName.name?.name;
+      String proxyConstructor = constructor != null ? ".$constructor" : "";
+      String proxyClassName =
+          "_Proxy${expression.staticType.element.name.substring(1)}";
+      String isConst = expression.isConst ? "const " : "";
+      return "$isConst$proxyClassName$proxyConstructor()";
     }
+
+    // 其他情况直接返回表达式源码
+    return "${expression.toString()}";
+
+    // if (expression is ListLiteral) {
+    //   List<String> elements = [];
+    //   for (CollectionElement collectionElement in expression.elements) {
+    //     if (collectionElement is Expression) {
+    //       Expression subExpression = collectionElement;
+    //       elements.add(await helper(subExpression));
+    //     } else {
+    //       // TODO(eernst) implement: `if` and `spread` elements of list.
+    //       await _severe("Not yet supported! "
+    //           "Encountered list literal element which is not an expression: "
+    //           "$collectionElement");
+    //       elements.add("");
+    //     }
+    //   }
+    //   if (expression.typeArguments == null ||
+    //       expression.typeArguments.arguments.isEmpty) {
+    //     return "const ${_formatAsDynamicList(elements)}";
+    //   } else {
+    //     assert(expression.typeArguments.arguments.length == 1);
+    //     // String typeArgument =
+    //     // typeAnnotationHelper(expression.typeArguments.arguments[0]);
+    //     // return "const <$typeArgument>${_formatAsDynamicList(elements)}";
+    //     return "${expression.toString()}";
+    //   }
+    // } else if (expression is SetOrMapLiteral) {
+    //   if (expression.isMap) {
+    //     List<String> elements = [];
+    //     for (CollectionElement collectionElement in expression.elements) {
+    //       if (collectionElement is MapLiteralEntry) {
+    //         String key = await helper(collectionElement.key);
+    //         String value = await helper(collectionElement.value);
+    //         elements.add("$key: $value");
+    //       } else {
+    //         // TODO(eernst) implement: `if` and `spread` elements of a map.
+    //         await _severe("Not yet supported! "
+    //             "Encountered map literal element which is not a map entry: "
+    //             "$collectionElement");
+    //         elements.add("");
+    //       }
+    //     }
+    //     if (expression.typeArguments == null ||
+    //         expression.typeArguments.arguments.isEmpty) {
+    //       return "const ${_formatAsMap(elements)}";
+    //     } else {
+    //       assert(expression.typeArguments.arguments.length == 2);
+    //       // String keyType =
+    //       //     typeAnnotationHelper(expression.typeArguments.arguments[0]);
+    //       // String valueType =
+    //       //     typeAnnotationHelper(expression.typeArguments.arguments[1]);
+    //       // return "const <$keyType, $valueType>${_formatAsMap(elements)}";
+    //       return "${expression.toString()}";
+    //     }
+    //   } else if (expression.isSet) {
+    //     List<String> elements = [];
+    //     for (CollectionElement collectionElement in expression.elements) {
+    //       if (collectionElement is Expression) {
+    //         Expression subExpression = collectionElement;
+    //         elements.add(await helper(subExpression));
+    //       } else {
+    //         // TODO(eernst) implement: `if` and `spread` elements of a set.
+    //         await _severe("Not yet supported! "
+    //             "Encountered set literal element which is not an expression: "
+    //             "$collectionElement");
+    //         elements.add("");
+    //       }
+    //     }
+    //     if (expression.typeArguments == null ||
+    //         expression.typeArguments.arguments.isEmpty) {
+    //       return "const ${_formatAsDynamicSet(elements)}";
+    //     } else {
+    //       assert(expression.typeArguments.arguments.length == 1);
+    //       // String typeArgument =
+    //       // typeAnnotationHelper(expression.typeArguments.arguments[0]);
+    //       // return "const <$typeArgument>${_formatAsDynamicSet(elements)}";
+    //       return "${expression.toString()}";
+    //     }
+    //   } else {
+    //     unreachableError("SetOrMapLiteral is neither a set nor a map");
+    //     return "";
+    //   }
+    // } else if (expression is InstanceCreationExpression) {
+    //   String constructor = expression.constructorName.toSource();
+    //   if (_isPrivateName(constructor)) {
+    //     await _severe("Cannot access private name $constructor, "
+    //         "needed for expression $expression");
+    //     return "";
+    //   }
+    //   LibraryElement libraryOfConstructor = expression.staticElement.library;
+    //   if (await _isImportableLibrary(
+    //       libraryOfConstructor, generatedLibraryId, resolver)) {
+    //     importCollector._addLibrary(libraryOfConstructor);
+    //     String prefix = importCollector._getPrefix(libraryOfConstructor);
+    //     // TODO(sigurdm) implement: Named arguments.
+    //     List<String> argumentList = [];
+    //     for (Expression argument in expression.argumentList.arguments) {
+    //       argumentList.add(await helper(argument));
+    //     }
+    //     String arguments = argumentList.join(", ");
+    //     // TODO(sigurdm) feature: Type arguments.
+    //     if (_isPrivateName(constructor)) {
+    //       await _severe("Cannot access private name $constructor, "
+    //           "needed for expression $expression");
+    //       return "";
+    //     }
+    //     return "const $prefix$constructor($arguments)";
+    //   } else {
+    //     await _severe("Cannot access library $libraryOfConstructor, "
+    //         "needed for expression $expression");
+    //     return "";
+    //   }
+    // } else if (expression is Identifier) {
+    //   if (Identifier.isPrivateName(expression.name)) {
+    //     Element staticElement = expression.staticElement;
+    //     if (staticElement is PropertyAccessorElement) {
+    //       VariableElement variable = staticElement.variable;
+    //       var resolvedLibrary = await variable.session
+    //           .getResolvedLibraryByElement(variable.library);
+    //       var declaration = resolvedLibrary.getElementDeclaration(variable);
+    //       if (declaration == null || declaration.node == null) {
+    //         await _severe("Cannot handle private identifier $expression");
+    //         return "";
+    //       }
+    //       VariableDeclaration variableDeclaration = declaration.node;
+    //       return await helper(variableDeclaration.initializer);
+    //     } else {
+    //       await _severe("Cannot handle private identifier $expression");
+    //       return "";
+    //     }
+    //   } else {
+    //     Element element = expression.staticElement;
+    //     if (element == null) {
+    //       // TODO(eernst): This can occur; but how could `expression` be
+    //       // unresolved? Issue 173.
+    //       await _fine("Encountered unresolved identifier $expression"
+    //           " in constant; using null");
+    //       // return "null";
+    //       return "${expression.name}";
+    //     } else if (element.library == null) {
+    //       return "${element.name}";
+    //     } else if (await _isImportableLibrary(
+    //         element.library, generatedLibraryId, resolver)) {
+    //       importCollector._addLibrary(element.library);
+    //       String prefix = importCollector._getPrefix(element.library);
+    //       Element enclosingElement = element.enclosingElement;
+    //       if (enclosingElement is ClassElement) {
+    //         prefix += "${enclosingElement.name}.";
+    //       }
+    //       if (_isPrivateName(element.name)) {
+    //         await _severe("Cannot access private name ${element.name}, "
+    //             "needed for expression $expression");
+    //       }
+    //       return "$prefix${element.name}";
+    //     } else {
+    //       await _severe("Cannot access library ${element.library}, "
+    //           "needed for expression $expression");
+    //       return "";
+    //     }
+    //   }
+    // } else if (expression is BinaryExpression) {
+    //   String a = await helper(expression.leftOperand);
+    //   String op = expression.operator.lexeme;
+    //   String b = await helper(expression.rightOperand);
+    //   return "$a $op $b";
+    // } else if (expression is ConditionalExpression) {
+    //   String condition = await helper(expression.condition);
+    //   String a = await helper(expression.thenExpression);
+    //   String b = await helper(expression.elseExpression);
+    //   return "$condition ? $a : $b";
+    // } else if (expression is ParenthesizedExpression) {
+    //   String nested = await helper(expression.expression);
+    //   return "($nested)";
+    // } else if (expression is PropertyAccess) {
+    //   String target = await helper(expression.target);
+    //   String selector = expression.propertyName.token.lexeme;
+    //   return "$target.$selector";
+    // } else if (expression is MethodInvocation) {
+    //   // We only handle "identical(a, b)".
+    //   // assert(expression.target == null);
+    //   // assert(expression.methodName.token.lexeme == "identical");
+    //   // var arguments = expression.argumentList.arguments;
+    //   // assert(arguments.length == 2);
+    //   // String a = await helper(arguments[0]);
+    //   // String b = await helper(arguments[1]);
+    //   // return "identical($a, $b)";
+    //   return "${expression.toString()}";
+    // } else if (expression is NamedExpression) {
+    //   String value = await _extractConstantCode(
+    //       expression.expression, importCollector, generatedLibraryId, resolver);
+    //   return "${expression.name} $value";
+    // } else {
+    //   assert(expression is IntegerLiteral ||
+    //       expression is BooleanLiteral ||
+    //       expression is StringLiteral ||
+    //       expression is NullLiteral ||
+    //       expression is SymbolLiteral ||
+    //       expression is DoubleLiteral ||
+    //       expression is TypedLiteral);
+    //   return expression.toSource();
+    // }
   }
 
   return await helper(expression);
