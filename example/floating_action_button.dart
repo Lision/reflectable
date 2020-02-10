@@ -2,9 +2,36 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:math' as math;
+
+import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
+
+import 'button.dart';
+import 'floating_action_button_theme.dart';
+import 'scaffold.dart';
+import 'theme.dart';
+import 'theme_data.dart';
+import 'tooltip.dart';
+
+const BoxConstraints _kSizeConstraints = BoxConstraints.tightFor(
+  width: 56.0,
+  height: 56.0,
+);
+
+const BoxConstraints _kMiniSizeConstraints = BoxConstraints.tightFor(
+  width: 40.0,
+  height: 40.0,
+);
+
+const BoxConstraints _kExtendedSizeConstraints = BoxConstraints(
+  minHeight: 48.0,
+  maxHeight: 48.0,
+);
+
 class _DefaultHeroTag {
   const _DefaultHeroTag();
-  const _DefaultHeroTag.abc() => _DefaultHeroTag();
   @override
   String toString() => '<default FloatingActionButton tag>';
 }
@@ -99,7 +126,7 @@ class FloatingActionButton extends StatelessWidget {
     this.tooltip,
     this.foregroundColor,
     this.backgroundColor,
-    this.heroTag = const _DefaultHeroTag.abc(),
+    this.heroTag = const _DefaultHeroTag(),
     this.elevation,
     this.highlightElevation,
     this.disabledElevation,
@@ -368,5 +395,62 @@ class FloatingActionButton extends StatelessWidget {
     }
 
     return result;
+  }
+}
+
+// This widget's size matches its child's size unless its constraints
+// force it to be larger or smaller. The child is centered.
+//
+// Used to encapsulate extended FABs whose size is fixed, using Row
+// and MainAxisSize.min, to be as wide as their label and icon.
+class _ChildOverflowBox extends SingleChildRenderObjectWidget {
+  const _ChildOverflowBox({
+    Key key,
+    Widget child,
+  }) : super(key: key, child: child);
+
+  @override
+  _RenderChildOverflowBox createRenderObject(BuildContext context) {
+    return _RenderChildOverflowBox(
+      textDirection: Directionality.of(context),
+    );
+  }
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _RenderChildOverflowBox renderObject) {
+    renderObject..textDirection = Directionality.of(context);
+  }
+}
+
+class _RenderChildOverflowBox extends RenderAligningShiftedBox {
+  _RenderChildOverflowBox({
+    RenderBox child,
+    TextDirection textDirection,
+  }) : super(
+            child: child,
+            alignment: Alignment.center,
+            textDirection: textDirection);
+
+  @override
+  double computeMinIntrinsicWidth(double height) => 0.0;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => 0.0;
+
+  @override
+  void performLayout() {
+    if (child != null) {
+      child.layout(const BoxConstraints(), parentUsesSize: true);
+      size = Size(
+        math.max(constraints.minWidth,
+            math.min(constraints.maxWidth, child.size.width)),
+        math.max(constraints.minHeight,
+            math.min(constraints.maxHeight, child.size.height)),
+      );
+      alignChild();
+    } else {
+      size = constraints.biggest;
+    }
   }
 }

@@ -1227,7 +1227,7 @@ class _ReflectorDomain {
     final int reflectedTypesOffset = typeParametersOffset;
 
     // Generate code for creation of class mirrors.
-    List<String> typeMirrorsList = [];
+    List<String> classMirrorsList = [];
     if (_capabilities._impliesTypes || _capabilities._impliesInstanceInvoke) {
       for (_ClassDomain classDomain in (await classes).domains) {
         // 过滤掉私有目标
@@ -1235,7 +1235,7 @@ class _ReflectorDomain {
           continue;
         }
 
-        typeMirrorsList.add(await _classMirrorCode(
+        classMirrorsList.add(await _classMirrorCode(
             classDomain,
             typeParameters,
             fields,
@@ -1258,7 +1258,6 @@ class _ReflectorDomain {
       // }
     }
     // String classMirrorsCode = _formatAsList("m.TypeMirror", typeMirrorsList);
-    String classMirrorsCode = typeMirrorsList.join("\n");
 
     // // Generate code for creation of getter and setter closures.
     // String gettersCode = _formatAsMap(instanceGetterNames.map(_gettingClosure));
@@ -1373,7 +1372,22 @@ class _ReflectorDomain {
     //     "$parameterMirrorsCode, $typesCode, $reflectedTypesOffset, "
     //     "$gettersCode, $settersCode, $librariesCode, "
     //     "$parameterListShapesCode)";
-    return "$classMirrorsCode";
+
+    // private class logic
+    List<String> privateClassMirrorsList = <String>[];
+    for (ClassElementImpl classElement in privateClasses) {
+      String mirror = classElement.source.contents.data.substring(
+          classElement.codeOffset,
+          classElement.codeOffset + classElement.codeLength);
+      String className = classElement.name;
+      String proxyClassName = "_Proxy${className.substring(1)}";
+      String result =
+          mirror.replaceAll(new RegExp("$className"), proxyClassName);
+      privateClassMirrorsList.add(result);
+    }
+    privateClassMirrorsList.addAll(classMirrorsList);
+    String result = privateClassMirrorsList.join("\n");
+    return "$result";
   }
 
   Future<int> _computeTypeIndexBase(Element typeElement, bool isVoid,
