@@ -17,3 +17,4 @@
 library material;
 
 export 'src/material/dialog.dart';
+export 'widgets.dart';

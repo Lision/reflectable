@@ -94,14 +94,16 @@ class Dialog extends StatelessWidget {
 
   // TODO(johnsonmh): Update default dialog border radius to 4.0 to match material spec.
   static const RoundedRectangleBorder _defaultDialogShape =
-    RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(2.0)));
+      RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(2.0)));
   static const double _defaultElevation = 24.0;
 
   @override
   Widget build(BuildContext context) {
     final DialogTheme dialogTheme = DialogTheme.of(context);
     return AnimatedPadding(
-      padding: MediaQuery.of(context).viewInsets + const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+      padding: MediaQuery.of(context).viewInsets +
+          const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
       duration: insetAnimationDuration,
       curve: insetAnimationCurve,
       child: MediaQuery.removeViewInsets(
@@ -114,8 +116,11 @@ class Dialog extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 280.0),
             child: Material(
-              color: backgroundColor ?? dialogTheme.backgroundColor ?? Theme.of(context).dialogBackgroundColor,
-              elevation: elevation ?? dialogTheme.elevation ?? _defaultElevation,
+              color: backgroundColor ??
+                  dialogTheme.backgroundColor ??
+                  Theme.of(context).dialogBackgroundColor,
+              elevation:
+                  elevation ?? dialogTheme.elevation ?? _defaultElevation,
               shape: shape ?? dialogTheme.shape ?? _defaultDialogShape,
               type: MaterialType.card,
               child: child,
@@ -213,8 +218,8 @@ class AlertDialog extends StatelessWidget {
     this.elevation,
     this.semanticLabel,
     this.shape,
-  }) : assert(contentPadding != null),
-       super(key: key);
+  })  : assert(contentPadding != null),
+        super(key: key);
 
   /// The (optional) title of the dialog is displayed in a large font at the top
   /// of the dialog.
@@ -309,9 +314,12 @@ class AlertDialog extends StatelessWidget {
 
     if (title != null) {
       children.add(Padding(
-        padding: titlePadding ?? EdgeInsets.fromLTRB(24.0, 24.0, 24.0, content == null ? 20.0 : 0.0),
+        padding: titlePadding ??
+            EdgeInsets.fromLTRB(24.0, 24.0, 24.0, content == null ? 20.0 : 0.0),
         child: DefaultTextStyle(
-          style: titleTextStyle ?? dialogTheme.titleTextStyle ?? theme.textTheme.title,
+          style: titleTextStyle ??
+              dialogTheme.titleTextStyle ??
+              theme.textTheme.title,
           child: Semantics(
             child: title,
             namesRoute: true,
@@ -326,7 +334,8 @@ class AlertDialog extends StatelessWidget {
           break;
         case TargetPlatform.android:
         case TargetPlatform.fuchsia:
-          label = semanticLabel ?? MaterialLocalizations.of(context)?.alertDialogLabel;
+          label = semanticLabel ??
+              MaterialLocalizations.of(context)?.alertDialogLabel;
       }
     }
 
@@ -335,7 +344,9 @@ class AlertDialog extends StatelessWidget {
         child: Padding(
           padding: contentPadding,
           child: DefaultTextStyle(
-            style: contentTextStyle ?? dialogTheme.contentTextStyle ?? theme.textTheme.subhead,
+            style: contentTextStyle ??
+                dialogTheme.contentTextStyle ??
+                theme.textTheme.subhead,
             child: content,
           ),
         ),
@@ -520,9 +531,9 @@ class SimpleDialog extends StatelessWidget {
     this.elevation,
     this.semanticLabel,
     this.shape,
-  }) : assert(titlePadding != null),
-       assert(contentPadding != null),
-       super(key: key);
+  })  : assert(titlePadding != null),
+        assert(contentPadding != null),
+        super(key: key);
 
   /// The (optional) title of the dialog is displayed in a large font at the top
   /// of the dialog.
@@ -605,7 +616,8 @@ class SimpleDialog extends StatelessWidget {
           break;
         case TargetPlatform.android:
         case TargetPlatform.fuchsia:
-          label = semanticLabel ?? MaterialLocalizations.of(context)?.dialogLabel;
+          label =
+              semanticLabel ?? MaterialLocalizations.of(context)?.dialogLabel;
       }
     }
 
@@ -645,7 +657,11 @@ class SimpleDialog extends StatelessWidget {
   }
 }
 
-Widget _buildMaterialDialogTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+Widget _buildMaterialDialogTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child) {
   return FadeTransition(
     opacity: CurvedAnimation(
       parent: animation,
@@ -689,13 +705,14 @@ Widget _buildMaterialDialogTransitions(BuildContext context, Animation<double> a
 ///  * [showGeneralDialog], which allows for customization of the dialog popup.
 ///  * <https://material.io/design/components/dialogs.html>
 Future<T> showDialog<T>({
-  @required BuildContext context,
+  @required
+      BuildContext context,
   bool barrierDismissible = true,
   @Deprecated(
-    'Instead of using the "child" argument, return the child from a closure '
-    'provided to the "builder" argument. This will ensure that the BuildContext '
-    'is appropriate for widgets built in the dialog.'
-  ) Widget child,
+      'Instead of using the "child" argument, return the child from a closure '
+      'provided to the "builder" argument. This will ensure that the BuildContext '
+      'is appropriate for widgets built in the dialog.')
+      Widget child,
   WidgetBuilder builder,
 }) {
   assert(child == null || builder == null);
@@ -704,16 +721,15 @@ Future<T> showDialog<T>({
   final ThemeData theme = Theme.of(context, shadowThemeOnly: true);
   return showGeneralDialog(
     context: context,
-    pageBuilder: (BuildContext buildContext, Animation<double> animation, Animation<double> secondaryAnimation) {
+    pageBuilder: (BuildContext buildContext, Animation<double> animation,
+        Animation<double> secondaryAnimation) {
       final Widget pageChild = child ?? Builder(builder: builder);
       return SafeArea(
-        child: Builder(
-          builder: (BuildContext context) {
-            return theme != null
-                ? Theme(data: theme, child: pageChild)
-                : pageChild;
-          }
-        ),
+        child: Builder(builder: (BuildContext context) {
+          return theme != null
+              ? Theme(data: theme, child: pageChild)
+              : pageChild;
+        }),
       );
     },
     barrierDismissible: barrierDismissible,
