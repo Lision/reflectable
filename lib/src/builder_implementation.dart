@@ -4630,7 +4630,7 @@ class BuilderImplementation {
               path.split(exportElement.enclosingElement.source.uri.path);
           String packageName = temp[temp.indexOf('lib') - 1];
           imports.add(
-              "import 'package:$packageName/${path.basename(exportElement.enclosingElement.source.uri.path)}'");
+              "import 'package:$packageName/${path.basename(exportElement.enclosingElement.source.uri.path)}';");
         }
       }
       results.add(imports.join('\n'));

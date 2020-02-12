@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Dart",
+      "name": "build",
       "program": ".dart_tool/build/entrypoint/build.dart",
       "request": "launch",
       "type": "dart",
