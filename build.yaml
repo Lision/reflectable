@@ -3,7 +3,7 @@ builders:
     target: ":reflectable"
     import: "package:reflectable/reflectable_builder.dart"
     builder_factories: ["reflectableBuilder"]
-    build_extensions: { ".dart": [".reflectable.dart"] }
+    build_extensions: { ".dart": ["_proxy.dart"] }
     auto_apply: root_package
     build_to: source
     defaults:

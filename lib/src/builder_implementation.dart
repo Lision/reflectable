@@ -3675,6 +3675,9 @@ class _ImportCollector {
 int _processedEntryPointCount = 0;
 
 class BuilderImplementation {
+  // exports map
+  Map<LibraryElement, List<ExportElement>> _exportsByLibrary = {};
+
   Resolver _resolver;
   List<LibraryElement> _libraries = [];
   Map<String, LibraryElement> _librariesByName = {};
@@ -4616,21 +4619,38 @@ class BuilderImplementation {
     if (world.entryPointLibrary.source.uri.path.contains('/src/')) {
       // 私有代码，公开的话需要 export
       results.add(mark);
+      for (List<ExportElement> exports in _exportsByLibrary.values) {
+        for (ExportElement exportElement in exports) {
+          if (!world.entryPointLibrary.source.uri.path
+              .contains(exportElement.uri)) {
+            continue;
+          }
+
+          List<String> temp =
+              path.split(exportElement.enclosingElement.source.uri.path);
+          String packageName = temp[temp.indexOf('lib') - 1];
+          imports.add(
+              "import 'package:$packageName/${path.basename(exportElement.enclosingElement.source.uri.path)}'");
+        }
+      }
       results.add(imports.join('\n'));
       results.add(code);
     } else {
       // 公开代码
       results.add(mark);
       results.add(imports.join('\n'));
-      String libraryCode = '';
       if (world.entryPointLibrary.name.isNotEmpty) {
+        if (_exportsByLibrary[world.entryPointLibrary] == null) {
+          _exportsByLibrary[world.entryPointLibrary] = [];
+        }
         results.add('library ${world.entryPointLibrary.name};');
+        List<String> exports = <String>[];
+        for (ExportElement exportElement in world.entryPointLibrary.exports) {
+          _exportsByLibrary[world.entryPointLibrary].add(exportElement);
+          exports.add("export '${exportElement.uri}';");
+        }
+        results.add(exports.join('\n'));
       }
-      List<String> exports = <String>[];
-      for (ExportElement exportElement in world.entryPointLibrary.exports) {
-        exports.add("export '${exportElement.uri}';");
-      }
-      results.add(exports.join('\n'));
       results.add(code);
     }
     String resultCode = '''
