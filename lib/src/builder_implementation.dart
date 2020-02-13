@@ -4,6 +4,7 @@
 
 library reflectable.src.builder_implementation;
 
+import 'dart:io' as io;
 import 'dart:developer' as developer;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -158,9 +159,29 @@ class ReflectionWorld {
           continue;
         }
 
+        // 文件判断
+        String libraryPath = library.source.uri.path;
+        if (path.isRelative(libraryPath) &&
+            path.split(path.current).last == path.split(libraryPath).first) {
+          assert(path.split(libraryPath).length > 0);
+          List<String> temp = path.split(libraryPath);
+          temp.removeAt(0);
+          libraryPath = path.absolute(path.joinAll(temp));
+        }
+        String libraryExtension = path.extension(libraryPath);
+        String proxyLibraryPath =
+            path.setExtension(libraryPath, '_proxy$libraryExtension');
+        if (await io.File(proxyLibraryPath).exists()) {
+          continue;
+        }
+
+        // code
+        io.File(proxyLibraryPath).createSync();
         String libraryCode = await reflector._generateCode(
             this, importCollector, typedefs,
-            curlibrary: library);
+            curLibrary: library);
+        libraryCode = DartFormatter().format(libraryCode);
+        io.File(proxyLibraryPath).writeAsString(libraryCode);
       }
       // if (typedefs.isNotEmpty) {
       //   for (DartType dartType in typedefs.keys) {
@@ -1046,7 +1067,7 @@ class _ReflectorDomain {
   /// `_reflector` to behave correctly.
   Future<String> _generateCode(ReflectionWorld world,
       _ImportCollector importCollector, Map<FunctionType, int> typedefs,
-      {LibraryElement curlibrary}) async {
+      {LibraryElement curLibrary}) async {
     // Library related collections.
     Enumerator<_LibraryDomain> libraries = Enumerator<_LibraryDomain>();
     Map<LibraryElement, _LibraryDomain> libraryMap =
@@ -1262,12 +1283,12 @@ class _ReflectorDomain {
     final int reflectedTypesOffset = typeParametersOffset;
 
     // 生成 class mirrors
-    curlibrary = curlibrary ?? world.entryPointLibrary;
+    curLibrary = curLibrary ?? world.entryPointLibrary;
     List<String> classMirrorsList = [];
     if (_capabilities._impliesTypes || _capabilities._impliesInstanceInvoke) {
       for (_ClassDomain classDomain in (await classes).domains) {
         // 过滤非本文件的目标
-        if (classDomain._classElement.library != curlibrary) {
+        if (classDomain._classElement.library != curLibrary) {
           continue;
         }
 
@@ -1438,12 +1459,12 @@ class _ReflectorDomain {
           .add("import 'package:hera/src/mirror/proxy_type_base.dart';");
     }
 
-    if (world.entryPointLibrary.source.uri.path.contains('/lib/src')) {
+    if (curLibrary.source.uri.path.contains('/lib/src')) {
       // 私有代码，公开的话需要 export
       resultStrings.add(markString);
       for (ExportElement export in _exports) {
         // 验证是否 export 的正是自己
-        if (!world.entryPointLibrary.source.uri.path.contains(export.uri)) {
+        if (!curLibrary.source.uri.path.contains(export.uri)) {
           continue;
         }
 
@@ -1457,11 +1478,11 @@ class _ReflectorDomain {
       // 公开代码
       resultStrings.add(markString);
       resultStrings.add(importStrings.join('\n'));
-      if (world.entryPointLibrary.name.isNotEmpty) {
-        resultStrings.add('library ${world.entryPointLibrary.name}_proxy;');
+      if (curLibrary.name.isNotEmpty) {
+        resultStrings.add('library ${curLibrary.name}_proxy;');
       }
       List<String> exportStrings = <String>[];
-      for (ExportElement export in world.entryPointLibrary.exports) {
+      for (ExportElement export in curLibrary.exports) {
         if (export.uri.startsWith('package:') &&
             !export.uri.contains('$packageName')) {
           // export 的 uri 并不是自己库里面的
