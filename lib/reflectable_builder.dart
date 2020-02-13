@@ -12,9 +12,6 @@ import 'package:build_runner_core/build_runner_core.dart';
 import 'src/builder_implementation.dart';
 
 class ReflectableBuilder implements Builder {
-  // 公用实现
-  final BuilderImplementation implementation = BuilderImplementation();
-
   BuilderOptions builderOptions;
 
   ReflectableBuilder(this.builderOptions);
@@ -26,7 +23,7 @@ class ReflectableBuilder implements Builder {
     var inputId = buildStep.inputId;
     var outputId = inputId.changeExtension('_proxy.dart');
     List<LibraryElement> visibleLibraries = await resolver.libraries.toList();
-    var generatedSource = await implementation.buildMirrorLibrary(
+    var generatedSource = await BuilderImplementation().buildMirrorLibrary(
         resolver, inputId, outputId, inputLibrary, visibleLibraries, true, []);
     await buildStep.writeAsString(outputId, generatedSource);
   }
