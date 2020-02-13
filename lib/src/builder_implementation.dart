@@ -4643,11 +4643,14 @@ class BuilderImplementation {
         if (_exportsByLibrary[world.entryPointLibrary] == null) {
           _exportsByLibrary[world.entryPointLibrary] = [];
         }
-        results.add('library ${world.entryPointLibrary.name};');
+        results.add('library ${world.entryPointLibrary.name}_proxy;');
         List<String> exports = <String>[];
         for (ExportElement exportElement in world.entryPointLibrary.exports) {
           _exportsByLibrary[world.entryPointLibrary].add(exportElement);
-          exports.add("export '${exportElement.uri}';");
+          String extensionString = path.extension(exportElement.uri);
+          String proxyUri =
+              path.setExtension(exportElement.uri, '_proxy$extensionString');
+          exports.add("export '$proxyUri';");
         }
         results.add(exports.join('\n'));
       }
