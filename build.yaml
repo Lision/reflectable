@@ -10,6 +10,7 @@ builders:
       generate_for:
         exclude:
           - lib/**.dart
+          - example/**/lib/src/**.dart
         include:
           # - benchmark/**.dart
           # - bin/**.dart
