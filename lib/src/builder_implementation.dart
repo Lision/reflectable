@@ -605,12 +605,22 @@ class _ReflectorDomain {
 
   // 需要单独怼的私有类
   Set<ClassElement> _privateClasses;
-
   Set<ClassElement> get privateClasses {
     if (_privateClasses == null) {
       _privateClasses = {};
     }
     return _privateClasses;
+  }
+
+  // package name
+  String _packageName;
+  String get packageName {
+    if (_packageName == null) {
+      List<String> temp = path.split(_world.entryPointLibrary.source.uri.path);
+      assert(temp.indexOf('lib') > 1);
+      _packageName = temp[temp.indexOf('lib') - 1];
+    }
+    return _packageName;
   }
 
   // 原有属性
@@ -1427,6 +1437,7 @@ class _ReflectorDomain {
       importStrings
           .add("import 'package:hera/src/mirror/proxy_type_base.dart';");
     }
+
     if (world.entryPointLibrary.source.uri.path.contains('/lib/src')) {
       // 私有代码，公开的话需要 export
       resultStrings.add(markString);
@@ -1437,9 +1448,6 @@ class _ReflectorDomain {
         }
 
         String exportPath = export.enclosingElement.source.uri.path;
-        List<String> temp = path.split(exportPath);
-        assert(temp.indexOf('lib') > 1);
-        String packageName = temp[temp.indexOf('lib') - 1];
         importStrings
             .add("import 'package:$packageName/${path.basename(exportPath)}';");
       }
@@ -1454,11 +1462,18 @@ class _ReflectorDomain {
       }
       List<String> exportStrings = <String>[];
       for (ExportElement export in world.entryPointLibrary.exports) {
-        _exports.add(export);
-        String exportExtension = path.extension(export.uri);
-        String proxyUri =
-            path.setExtension(export.uri, '_proxy$exportExtension');
-        exportStrings.add("export '$proxyUri';");
+        if (export.uri.startsWith('package:') &&
+            !export.uri.contains('$packageName')) {
+          // export 的 uri 并不是自己库里面的
+          exportStrings.add("export '${export.uri}';");
+        } else {
+          // export 的 uri 是自己库内部的文件需要特殊处理
+          _exports.add(export);
+          String exportExtension = path.extension(export.uri);
+          String proxyUri =
+              path.setExtension(export.uri, '_proxy$exportExtension');
+          exportStrings.add("export '$proxyUri';");
+        }
       }
       resultStrings.add(exportStrings.join('\n'));
       resultStrings.add(code);
