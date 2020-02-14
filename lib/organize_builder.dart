@@ -22,6 +22,7 @@ class OrganizeBuilder implements Builder {
       implementation.organizeProxyPackage();
     }
     assert(_packageName == implementation.packageName);
+    await implementation.organizeProxyFile();
   }
 
   Map<String, List<String>> get buildExtensions => const {
