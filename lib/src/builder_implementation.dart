@@ -27,7 +27,7 @@ import 'fixed_point.dart';
 import 'incompleteness.dart';
 import 'reflectable_class_constants.dart' as reflectable_class_constants;
 import 'reflectable_errors.dart' as errors;
-import '../extra/reflectable_include_parser.dart';
+import 'extra/reflectable_include_parser.dart';
 
 /// Specifiers for warnings that may be suppressed; `allWarnings` disables all
 /// warnings, and the remaining values are concerned with individual warnings.

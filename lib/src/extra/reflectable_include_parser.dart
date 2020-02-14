@@ -1,3 +1,5 @@
+// Copyright (c) 2020, the MTFlutter Team - lixin79.
+
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';

@@ -9,7 +9,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:build_config/build_config.dart';
 import 'package:build_runner_core/build_runner_core.dart';
-import 'src/builder_implementation.dart';
+import 'package:reflectable/src/builder_implementation.dart';
 
 class ReflectableBuilder implements Builder {
   BuilderOptions builderOptions;

@@ -5,6 +5,8 @@ builders:
     builder_factories: ["reflectableBuilder"]
     build_extensions: { ".dart": ["_proxy.dart"] }
     auto_apply: root_package
+    runs_before:
+      - reflectable|organize_builder
     build_to: source
     defaults:
       generate_for:
@@ -19,3 +21,15 @@ builders:
           # - test/**.dart
           # - tool/**.dart
           # - web/**.dart
+  organize_builder:
+    target: ":reflectable"
+    import: "package:reflectable/organize_builder.dart"
+    builder_factories: ["organizeBuilder"]
+    build_extensions: { "_proxy.dart": ["_mirror.dart"] }
+    auto_apply: root_package
+    build_to: source
+    defaults:
+      generate_for:
+        exclude:
+        include:
+          - example/**_proxy.dart
