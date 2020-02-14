@@ -4,8 +4,7 @@ library reflectable.src.organize_builder_implementation;
 
 import 'dart:io' as io;
 import 'dart:async';
-import 'dart:convert';
-import 'package:yaml/yaml.dart';
+import 'package:yaml/yaml.dart' as yaml;
 import 'package:path/path.dart' as path;
 import 'package:build/build.dart';
 
@@ -28,6 +27,22 @@ class OrganizeBuilderImplementation {
     io.Directory(proxyLibPath).createSync(recursive: true);
 
     // pubspec.yaml
+    String pubspecBaseName = 'pubspec.yaml';
+    String inputFilePath = path.join(path.current, _inputId.path);
+    List<String> inputFilePathSegments = path.split(inputFilePath);
+    assert(inputFilePathSegments.contains(packageName));
+    var temp = inputFilePathSegments.sublist(
+        0, inputFilePathSegments.indexOf(packageName));
+    String sourcePubspecPath =
+        path.join(path.joinAll(temp), packageName, pubspecBaseName);
+    String contents = io.File(sourcePubspecPath).readAsStringSync();
+    contents = _convertToProxyPubspecContents(contents);
+    String pubspecPath = path.join(proxyPackagePath, pubspecBaseName);
+    if (io.File(pubspecPath).existsSync()) {
+      io.File(pubspecPath).deleteSync(recursive: true);
+    }
+    io.File(pubspecPath).createSync(recursive: true);
+    io.File(pubspecPath).writeAsStringSync(contents);
   }
 
   Future<void> organizeProxyFile() async {
@@ -70,5 +85,55 @@ class OrganizeBuilderImplementation {
       _proxyPackageName = '${packageName}_proxy';
     }
     return _proxyPackageName;
+  }
+
+  String _convertToProxyPubspecContents(String contents) {
+    var doc = yaml.loadYamlDocument(contents);
+    assert(doc.contents.value is Map);
+    Map map = Map.of(doc.contents.value);
+    map['name'] = proxyPackageName;
+    map['author'] = 'lision <lixin79@meituan.com>';
+    map['homepage'] = 'http://mtflutter.sankuai.com';
+    map['dependencies'] = Map.of(map['dependencies']);
+    assert(map['version'] != null);
+    map['dependencies']['$packageName'] = '${map['version']}';
+    map['dev_dependencies'] = Map.of(map['dev_dependencies']);
+    map['dev_dependencies']['$packageName'] = '${map['version']}';
+    String result = _convertToYamlString(map, '');
+    return result;
+  }
+
+  String _convertToYamlString(dynamic target, String curTab) {
+    // 没找到合适的 yaml 生成库，官方就给了个解析库，简单怼个递归解析
+    if (target is Map) {
+      curTab = '$curTab  ';
+      List<String> temp = <String>[];
+      for (var item in target.keys) {
+        assert(item is String);
+        String itemString =
+            '$curTab$item: ${_convertToYamlString(target[item], curTab)}';
+        temp.add(itemString);
+      }
+      return '\n${temp.join('\n')}';
+    }
+
+    if (target is List) {
+      curTab = '$curTab  ';
+      List<String> temp = <String>[];
+      for (var item in target) {
+        String itemString = '$curTab- ${_convertToYamlString(item, curTab)}';
+        temp.add(itemString);
+      }
+      return '\n${temp.join('\n')}';
+    }
+
+    if (target is String &&
+        target.contains(new RegExp(r'[0-9]+.[0-9]+.[0-9]+'))) {
+      if (!target.startsWith(new RegExp(r'[\^0-9]'))) {
+        return '"$target"';
+      }
+    }
+
+    return target.toString();
   }
 }
