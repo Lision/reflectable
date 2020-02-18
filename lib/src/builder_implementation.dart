@@ -1469,7 +1469,9 @@ class _ReflectorDomain {
       resultStrings.add(markString);
       for (ExportElement export in _exports) {
         // 验证是否 export 的正是自己
-        if (!curLibrary.source.uri.path.contains(export.uri)) {
+        List<String> temp = path.split(curLibrary.source.uri.path);
+        String srcPath = path.joinAll(temp.sublist(temp.indexOf('src')));
+        if (!export.uri.contains(srcPath)) {
           continue;
         }
 
@@ -1488,10 +1490,25 @@ class _ReflectorDomain {
       }
       List<String> exportStrings = <String>[];
       for (ExportElement export in curLibrary.exports) {
-        if (export.uri.startsWith('package:') &&
-            !export.uri.contains('$packageName')) {
-          // export 的 uri 并不是自己库里面的
-          exportStrings.add("export '${export.uri}';");
+        if (export.uri.startsWith('package:')) {
+          assert(export.uri.length > 'package:'.length);
+          if (path
+              .split(export.uri.substring('package:'.length))
+              .contains('$packageName')) {
+            // export 的 uri 是自己库里面的，通过 package 形式 export
+            if (export.uri.contains('src')) {
+              // 私有文件
+              _exports.add(export);
+            }
+            String temp =
+                export.uri.replaceFirst('$packageName', '${packageName}_proxy');
+            String exportExtension = path.extension(export.uri);
+            String proxyUri = path.setExtension(temp, '_proxy$exportExtension');
+            exportStrings.add("export '$proxyUri';");
+          } else {
+            // export 的 uri 并不是自己库里面的
+            exportStrings.add("export '${export.uri}';");
+          }
         } else {
           // export 的 uri 是自己库内部的文件需要特殊处理
           _exports.add(export);
