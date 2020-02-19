@@ -146,9 +146,8 @@ class ReflectionWorld {
 
       // 关联文件
       for (LibraryElement library in libraries) {
-        // 过滤 datrt 以及 reflectable 开头的 library
-        if (library.name.startsWith("dart") ||
-            library.name.startsWith("reflectable")) {
+        // 过滤 reflectable 开头的 library
+        if (library.name.startsWith("reflectable")) {
           continue;
         }
 
@@ -1510,12 +1509,17 @@ class _ReflectorDomain {
             exportStrings.add("export '${export.uri}';");
           }
         } else {
-          // export 的 uri 是自己库内部的文件需要特殊处理
-          _exports.add(export);
-          String exportExtension = path.extension(export.uri);
-          String proxyUri =
-              path.setExtension(export.uri, '_proxy$exportExtension');
-          exportStrings.add("export '$proxyUri';");
+          if (export.uri.startsWith('dart:') &&
+              !packageName.startsWith('dart')) {
+            exportStrings.add("export '${export.uri}';");
+          } else {
+            // export 的 uri 是自己库内部的文件需要特殊处理
+            _exports.add(export);
+            String exportExtension = path.extension(export.uri);
+            String proxyUri =
+                path.setExtension(export.uri, '_proxy$exportExtension');
+            exportStrings.add("export '$proxyUri';");
+          }
         }
       }
       resultStrings.add(exportStrings.join('\n'));
@@ -4331,9 +4335,8 @@ class BuilderImplementation {
 
     // 免插桩（这里指免去插入 @Reflector Annotation）分析逻辑
     for (LibraryElement library in _libraries) {
-      // 过滤 dart 以及 reflectable 开头的 library
-      if (library.name.startsWith("dart") ||
-          library.name.startsWith("reflectable")) {
+      // 过滤 reflectable 开头的 library
+      if (library.name.startsWith("reflectable")) {
         continue;
       }
 
