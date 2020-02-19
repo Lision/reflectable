@@ -623,6 +623,9 @@ class _ReflectorDomain {
   // exports map
   List<ExportElement> _exports = <ExportElement>[];
 
+  // 类继承可能跨库
+  Map<String, ClassElement> _superClxInOtherPackage = <String, ClassElement>{};
+
   // 需要单独怼的私有类
   Set<ClassElement> _privateClasses;
   Set<ClassElement> get privateClasses {
@@ -2057,124 +2060,212 @@ ${resultStrings.join('\n\n')}
     while (superClx is MixinApplication || _isPrivateName(superClx.name)) {
       superClx = clxes.superclassOf(superClx);
     }
+
     if (superClx.name != "Object") {
+      if (!path.split(superClx.source.uri.path).contains('$packageName')) {
+        // 非本库的类，说明这个父类跨库了
+        String curClassSourcePath = classDomain._classElement.source.uri.path;
+        if (_superClxInOtherPackage[curClassSourcePath] == null) {
+          _superClxInOtherPackage[curClassSourcePath] = superClx;
+          _ClassDomain superClxDomain = clxes.domains.toList().firstWhere(
+              (domain) => domain._classElement.name == superClx.name);
+          assert(superClxDomain != null);
+          String superClxCode = await _classMirrorCode(
+              superClxDomain,
+              typeParameters,
+              fields,
+              fieldsOffset,
+              methodsOffset,
+              typeParametersOffset,
+              members,
+              parameterListShapes,
+              parameterListShapeOf,
+              reflectedTypes,
+              reflectedTypesOffset,
+              libraries,
+              libraryMap,
+              importCollector,
+              typedefs);
+          return '''
+$superClxCode
+
+class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+  @override
+  MapEntry<String, Map<String, Function>> typeMethodMap() {
+    return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
+  }
+
+  Map<String, Function> _typeMethodMap() {
+    return {
+      $constructorAndStaticMethodsProxyCode
+    };
+  }
+
+  @override
+  MapEntry<String, Map<String, dynamic>> identifierMap() {
+    return MapEntry("${classDomain._simpleName}", _identifierMap());
+  }
+
+  Map<String, dynamic> _identifierMap() {
+    return {
+      $identifierProxyCode
+    };
+  }
+
+  @override
+  MapEntry<String, Map<String, Function>> getterMap() {
+    return MapEntry("${classDomain._simpleName}", this._getterMap());
+  }
+
+  Map<String, Function> _getterMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().getterMap().value);
+    result.addAll({$getterProxyCode});
+    return result;
+  }
+
+  @override
+  MapEntry<String, Map<String, Function>> setterMap() {
+    return MapEntry("${classDomain._simpleName}", _setterMap());
+  }
+
+  Map<String, Function> _setterMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().setterMap().value);
+    result.addAll({$setterProxyCode});
+    return result;
+  }
+
+  @override
+  MapEntry<String, Map<String, Function>> methodMap() {
+    return MapEntry("${classDomain._simpleName}", _methodMap());
+  }
+
+  Map<String, Function> _methodMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().methodMap().value);
+    result.addAll({$methodProxyCode});
+    return result;
+  }
+}
+          ''';
+        }
+      }
+
       return '''
-    class Proxy${classDomain._simpleName} extends ProxyTypeBase {
-      @override
-      MapEntry<String, Map<String, Function>> typeMethodMap() {
-        return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
-      }
+class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+  @override
+  MapEntry<String, Map<String, Function>> typeMethodMap() {
+    return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
+  }
 
-      Map<String, Function> _typeMethodMap() {
-        return {
-          $constructorAndStaticMethodsProxyCode
-        };
-      }
+  Map<String, Function> _typeMethodMap() {
+    return {
+      $constructorAndStaticMethodsProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, dynamic>> identifierMap() {
-        return MapEntry("${classDomain._simpleName}", _identifierMap());
-      }
+  @override
+  MapEntry<String, Map<String, dynamic>> identifierMap() {
+    return MapEntry("${classDomain._simpleName}", _identifierMap());
+  }
 
-      Map<String, dynamic> _identifierMap() {
-        return {
-          $identifierProxyCode
-        };
-      }
+  Map<String, dynamic> _identifierMap() {
+    return {
+      $identifierProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> getterMap() {
-        return MapEntry("${classDomain._simpleName}", this._getterMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> getterMap() {
+    return MapEntry("${classDomain._simpleName}", this._getterMap());
+  }
 
-      Map<String, Function> _getterMap() {
-        Map<String, Function> result = Map.of(Proxy${superClx.name}().getterMap().value);
-        result.addAll({$getterProxyCode});
-        return result;
-      }
+  Map<String, Function> _getterMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().getterMap().value);
+    result.addAll({$getterProxyCode});
+    return result;
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> setterMap() {
-        return MapEntry("${classDomain._simpleName}", _setterMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> setterMap() {
+    return MapEntry("${classDomain._simpleName}", _setterMap());
+  }
 
-      Map<String, Function> _setterMap() {
-        Map<String, Function> result = Map.of(Proxy${superClx.name}().setterMap().value);
-        result.addAll({$setterProxyCode});
-        return result;
-      }
+  Map<String, Function> _setterMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().setterMap().value);
+    result.addAll({$setterProxyCode});
+    return result;
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> methodMap() {
-        return MapEntry("${classDomain._simpleName}", _methodMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> methodMap() {
+    return MapEntry("${classDomain._simpleName}", _methodMap());
+  }
 
-      Map<String, Function> _methodMap() {
-        Map<String, Function> result = Map.of(Proxy${superClx.name}().methodMap().value);
-        result.addAll({$methodProxyCode});
-        return result;
-      }
-    }
+  Map<String, Function> _methodMap() {
+    Map<String, Function> result = Map.of(Proxy${superClx.name}().methodMap().value);
+    result.addAll({$methodProxyCode});
+    return result;
+  }
+}
       ''';
     }
 
     return '''
-    class Proxy${classDomain._simpleName} extends ProxyTypeBase {
-      @override
-      MapEntry<String, Map<String, Function>> typeMethodMap() {
-        return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
-      }
+class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+  @override
+  MapEntry<String, Map<String, Function>> typeMethodMap() {
+    return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
+  }
 
-      Map<String, Function> _typeMethodMap() {
-        return {
-          $constructorAndStaticMethodsProxyCode
-        };
-      }
+  Map<String, Function> _typeMethodMap() {
+    return {
+      $constructorAndStaticMethodsProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, dynamic>> identifierMap() {
-        return MapEntry("${classDomain._simpleName}", _identifierMap());
-      }
+  @override
+  MapEntry<String, Map<String, dynamic>> identifierMap() {
+    return MapEntry("${classDomain._simpleName}", _identifierMap());
+  }
 
-      Map<String, dynamic> _identifierMap() {
-        return {
-          $identifierProxyCode
-        };
-      }
+  Map<String, dynamic> _identifierMap() {
+    return {
+      $identifierProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> getterMap() {
-        return MapEntry("${classDomain._simpleName}", this._getterMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> getterMap() {
+    return MapEntry("${classDomain._simpleName}", this._getterMap());
+  }
 
-      Map<String, Function> _getterMap() {
-        return {
-          $getterProxyCode
-        };
-      }
+  Map<String, Function> _getterMap() {
+    return {
+      $getterProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> setterMap() {
-        return MapEntry("${classDomain._simpleName}", _setterMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> setterMap() {
+    return MapEntry("${classDomain._simpleName}", _setterMap());
+  }
 
-      Map<String, Function> _setterMap() {
-        return {
-          $setterProxyCode
-        };
-      }
+  Map<String, Function> _setterMap() {
+    return {
+      $setterProxyCode
+    };
+  }
 
-      @override
-      MapEntry<String, Map<String, Function>> methodMap() {
-        return MapEntry("${classDomain._simpleName}", _methodMap());
-      }
+  @override
+  MapEntry<String, Map<String, Function>> methodMap() {
+    return MapEntry("${classDomain._simpleName}", _methodMap());
+  }
 
-      Map<String, Function> _methodMap() {
-        return {
-          $methodProxyCode
-        };
-      }
-    }
+  Map<String, Function> _methodMap() {
+    return {
+      $methodProxyCode
+    };
+  }
+}
     ''';
   }
 
@@ -5785,7 +5876,8 @@ Future<bool> _isImportable(
 Future<bool> _isImportableLibrary(LibraryElement library,
     AssetId generatedLibraryId, Resolver resolver) async {
   Uri importUri = await _getImportUri(library, generatedLibraryId);
-  return importUri.scheme != "dart" || sdkLibraryNames.contains(importUri.path);
+  // return importUri.scheme != "dart" || sdkLibraryNames.contains(importUri.path);
+  return importUri.path.length > 0;
 }
 
 /// Gets a URI which would be appropriate for importing the file represented by
