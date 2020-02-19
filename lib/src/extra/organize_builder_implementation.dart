@@ -97,8 +97,11 @@ class OrganizeBuilderImplementation {
     map['dependencies'] = Map.of(map['dependencies']);
     assert(map['version'] != null);
     map['dependencies']['$packageName'] = '${map['version']}';
+    map['dependencies']['$baseProxyPackageName'] = '$baseProxyPackageVersion';
     map['dev_dependencies'] = Map.of(map['dev_dependencies']);
     map['dev_dependencies']['$packageName'] = '${map['version']}';
+    map['dev_dependencies']['$baseProxyPackageName'] =
+        '$baseProxyPackageVersion';
     String result = _convertToYamlString(map, '');
     return result;
   }
@@ -136,4 +139,7 @@ class OrganizeBuilderImplementation {
 
     return target.toString();
   }
+
+  static const String baseProxyPackageName = 'base_proxy';
+  static const String baseProxyPackageVersion = '0.0.1';
 }
