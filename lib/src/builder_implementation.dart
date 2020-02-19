@@ -751,9 +751,16 @@ class _ReflectorDomain {
           "b ? (length == null ? List() : List(length)) : null";
     }
 
-    String positionals =
-        Iterable.generate(requiredPositionalCount, (int i) => parameterNames[i])
-            .join(", ");
+    String _positionalCode(int i) {
+      if (type.normalParameterTypes[i] is TypeParameterType) {
+        return '${type.normalParameterTypes[i].name} ${parameterNames[i]}';
+      }
+
+      return parameterNames[i];
+    }
+
+    String positionals = Iterable.generate(
+        requiredPositionalCount, (int i) => _positionalCode(i)).join(", ");
     String positionalArguments = Iterable.generate(requiredPositionalCount,
         (int i) => _positionalParamterCode(type.parameters[i])).join(", ");
 
@@ -762,8 +769,14 @@ class _ReflectorDomain {
       String code = await _extractDefaultValueCode(
           importCollector, executable.parameters[requiredPositionalCount + i]);
       String defaultPart = code.isEmpty ? "" : " = $code";
-      optionalsWithDefaultList
-          .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
+      String argType = type.optionalParameterTypes[i].name;
+      if (type.optionalParameterTypes[i] is TypeParameterType) {
+        optionalsWithDefaultList.add(
+            "$argType ${parameterNames[requiredPositionalCount + i]}$defaultPart");
+      } else {
+        optionalsWithDefaultList
+            .add("${parameterNames[requiredPositionalCount + i]}$defaultPart");
+      }
     }
     String optionalsWithDefaults = optionalsWithDefaultList.join(", ");
 
@@ -776,7 +789,21 @@ class _ReflectorDomain {
       String code = await _extractDefaultValueCode(
           importCollector, executable.parameters[requiredPositionalCount + i]);
       String defaultPart = code.isEmpty ? "" : " = $code";
-      namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+      String argType = type.namedParameterTypes[namedParameterNames[i]].name;
+      if (type.namedParameterTypes[namedParameterNames[i]]
+          is TypeParameterType) {
+        namedWithDefaultList
+            .add("$argType ${namedParameterNames[i]}$defaultPart");
+      } else {
+        namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+      }
+      // TODO: lision - 待时机成熟后开启封印
+      // if (!argType.startsWith('_')) {
+      //   namedWithDefaultList
+      //       .add("$argType ${namedParameterNames[i]}$defaultPart");
+      // } else {
+      //   namedWithDefaultList.add("${namedParameterNames[i]}$defaultPart");
+      // }
     }
     String namedWithDefaults = namedWithDefaultList.join(", ");
 
@@ -2053,6 +2080,27 @@ ${resultStrings.join('\n\n')}
     //       '$typeParameterIndices, $dynamicReflectedTypeIndex)';
     // }
 
+    // class description
+    String classDescription = classDomain._classElement.toString();
+    if (!classDescription.contains('class') ||
+        !classDescription.contains('<') ||
+        !classDescription.contains('>')) {
+      classDescription = 'class Proxy${classDomain._simpleName}';
+    } else {
+      int startIdx = classDescription.indexOf('<');
+      int endIdx = classDescription.indexOf('>');
+      String typeParameterDescription =
+          classDescription.substring(startIdx, endIdx + 1);
+      if (!typeParameterDescription.contains('extends') ||
+          typeParameterDescription.contains('dynamic')) {
+        // 如果解析出来的是 <T extends dynamic>，那将毫无意义
+        classDescription = 'class Proxy${classDomain._simpleName}';
+      } else {
+        classDescription =
+            'class Proxy${classDomain._simpleName}$typeParameterDescription';
+      }
+    }
+
     // class relation logic
     ClassElementEnhancedSet clxes = (await classes);
     ClassElement superClx = clxes.superclassOf(classDomain._classElement);
@@ -2060,10 +2108,9 @@ ${resultStrings.join('\n\n')}
     while (superClx is MixinApplication || _isPrivateName(superClx.name)) {
       superClx = clxes.superclassOf(superClx);
     }
-
     if (superClx.name != "Object") {
       if (!path.split(superClx.source.uri.path).contains('$packageName')) {
-        // 非本库的类，说明这个父类跨库了
+        // 非本库的���，说明这个父类跨库了
         String curClassSourcePath = classDomain._classElement.source.uri.path;
         if (_superClxInOtherPackage[curClassSourcePath] == null) {
           _superClxInOtherPackage[curClassSourcePath] = superClx;
@@ -2089,7 +2136,7 @@ ${resultStrings.join('\n\n')}
           return '''
 $superClxCode
 
-class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+$classDescription extends ProxyTypeBase {
   @override
   MapEntry<String, Map<String, Function>> typeMethodMap() {
     return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
@@ -2150,7 +2197,7 @@ class Proxy${classDomain._simpleName} extends ProxyTypeBase {
       }
 
       return '''
-class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+$classDescription extends ProxyTypeBase {
   @override
   MapEntry<String, Map<String, Function>> typeMethodMap() {
     return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
@@ -2210,7 +2257,7 @@ class Proxy${classDomain._simpleName} extends ProxyTypeBase {
     }
 
     return '''
-class Proxy${classDomain._simpleName} extends ProxyTypeBase {
+$classDescription extends ProxyTypeBase {
   @override
   MapEntry<String, Map<String, Function>> typeMethodMap() {
     return MapEntry("${classDomain._simpleName}", this._typeMethodMap());
