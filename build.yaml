@@ -12,10 +12,9 @@ builders:
       generate_for:
         exclude:
           - lib/**.dart
-          - input/**/lib/src/**.dart
+          - example/**/lib/src/**.dart
         include:
-          - example/**.dart
-          - input/**/lib/**.dart
+          - example/**/lib/**.dart
   organize_builder:
     target: ":reflectable"
     import: "package:reflectable/organize_builder.dart"
@@ -27,4 +26,4 @@ builders:
       generate_for:
         exclude:
         include:
-          - input/**_proxy.dart
+          - example/**_proxy.dart
