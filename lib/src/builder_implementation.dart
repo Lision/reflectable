@@ -2053,8 +2053,8 @@ ${resultStrings.join('\n\n')}
     // class relation logic
     ClassElementEnhancedSet clxes = (await classes);
     ClassElement superClx = clxes.superclassOf(classDomain._classElement);
-    // 看见 mixin application 绕道走
-    while (superClx is MixinApplication) {
+    // 看见 mixin application || private 绕道走
+    while (superClx is MixinApplication || _isPrivateName(superClx.name)) {
       superClx = clxes.superclassOf(superClx);
     }
     if (superClx.name != "Object") {
